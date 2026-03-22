@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
@@ -501,21 +501,6 @@ export async function submitSessionForm(formData: FormData) {
   await initDbIfNeeded();
 
   const input = parseSessionForm(formData);
-
-  const engineInput: SessionInput = {
-    trigger: input.trigger,
-    distortionClass: input.distortion_class,
-    origin: input.origin,
-    thought: input.thought,
-    emotion: input.emotion,
-    behavior: input.behavior,
-    protocol: input.protocol,
-    nextAction: input.next_action,
-    clarityRating: input.clarity_rating,
-    outcome: input.outcome,
-  };
-
-  const engineResult = runSessionEngine(engineInput);
   const sessionId = randomUUID();
 
   const previous = await getOrCreateContinuityState(input.operator_id);
@@ -572,7 +557,6 @@ export async function submitSessionForm(formData: FormData) {
     operator_id: input.operator_id,
     session_id: sessionId,
     payload: {
-      engine: engineResult,
       trigger: input.trigger,
       distortion_class: input.distortion_class,
       outcome: input.outcome,
@@ -885,4 +869,3 @@ export async function resetSessions() {
 
   return { ok: true as const };
 }
-
