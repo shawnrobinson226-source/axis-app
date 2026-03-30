@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
@@ -126,7 +126,7 @@ function parseSessionForm(formData: FormData): ParsedSessionForm {
   const origin = asString(formData.get("origin")) || "local";
   const thought = asString(formData.get("thought")) || trigger;
   const emotion = asString(formData.get("emotion")) || "unspecified";
-  const behavior = asString(formData.get("behavior")) || next_action || "unspecified";
+  const behavior = asString(formData.get("behavior")) || "unspecified";
   const protocol = asString(formData.get("protocol")) || "aligned_action";
   const next_action = asString(formData.get("next_action"));
   const clarity_rating = clamp(asNumber(formData.get("clarity_rating") ?? formData.get("clarity_0_10"), 5), 0, 10);
@@ -763,4 +763,3 @@ export async function resetSessions() {
 
   return { ok: true as const };
 }
-
