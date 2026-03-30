@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
@@ -319,7 +319,7 @@ export async function submitSessionForm(formData: FormData) {
   const engineInput: SessionInput = {
     trigger: input.trigger,
     distortionClass: input.distortion_class,
-    origin: input.origin,
+    origin: input.origin ?? "local",
     thought: input.thought,
     emotion: input.emotion,
     behavior: input.behavior,
