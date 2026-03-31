@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useTransition } from "react";
+import PreflightChecklist from "@/components/vanta/PreflightChecklist";
 import { analyzeTrigger } from "@/lib/kernel/v1/analyze";
 import { submitSessionForm } from "./actions";
 
@@ -66,6 +67,8 @@ export default function SessionPage() {
 
       <form action={submitSessionForm} className="space-y-6">
         <input type="hidden" name="operator_id" value="op_legacy" />
+
+        <PreflightChecklist />
 
         <textarea
           name="trigger"
