@@ -1,22 +1,11 @@
-import { NextResponse } from "next/server";
+import { apiError, apiOk } from "@/lib/api/responses";
 
 export async function GET() {
   try {
-    return NextResponse.json({
-      ok: true,
-      version: "v1",
-      data: {
-        status: "healthy",
-      },
+    return apiOk({
+      status: "healthy",
     });
   } catch (err) {
-    return NextResponse.json(
-      {
-        ok: false,
-        version: "v1",
-        error: err instanceof Error ? err.message : "Unknown error",
-      },
-      { status: 500 },
-    );
+    return apiError(err instanceof Error ? err.message : "Unknown error");
   }
 }
