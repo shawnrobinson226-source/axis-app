@@ -1,4 +1,4 @@
-export interface GuardInput {
+﻿export interface GuardInput {
   stability: number;
   reference: boolean;
   impact: number;

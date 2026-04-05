@@ -1,10 +1,9 @@
-﻿"use server";
+"use server";
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, initDbIfNeeded } from "@/lib/db/client";
-import { runGuards } from "../../lib/engine/guards";
 import {
   runSessionEngine,
   type SessionInput,
@@ -69,9 +68,6 @@ type ParsedSessionForm = {
   next_action: string;
   clarity_rating: number;
   outcome: SessionOutcome;
-  stability: number;
-  reference: boolean;
-  impact: number;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -133,19 +129,11 @@ function parseSessionForm(formData: FormData): ParsedSessionForm {
   const behavior = asString(formData.get("behavior")) || "unspecified";
   const protocol = asString(formData.get("protocol")) || "aligned_action";
   const next_action = asString(formData.get("next_action"));
-  const clarity_rating = clamp(
-    asNumber(formData.get("clarity_rating") ?? formData.get("clarity_0_10"), 5),
-    0,
-    10,
-  );
+  const clarity_rating = clamp(asNumber(formData.get("clarity_rating") ?? formData.get("clarity_0_10"), 5), 0, 10);
   const outcome = parseOutcome(asString(formData.get("outcome")) || "reduced");
 
-  const stability = clamp(asNumber(formData.get("stability"), 5), 0, 10);
-  const reference = asString(formData.get("reference")) === "yes";
-  const impact = clamp(asNumber(formData.get("impact"), 3), 0, 10);
-
   if (!trigger) throw new Error("Trigger is required.");
-  if (!next_action) throw new Error("Next action is required.");
+            if (!next_action) throw new Error("Next action is required.");
 
   return {
     operator_id,
@@ -159,9 +147,6 @@ function parseSessionForm(formData: FormData): ParsedSessionForm {
     next_action,
     clarity_rating,
     outcome,
-    stability,
-    reference,
-    impact,
   };
 }
 
@@ -207,9 +192,7 @@ async function appendEvent(args: {
   });
 }
 
-async function getOrCreateContinuityState(
-  operatorId: string,
-): Promise<ContinuityState> {
+async function getOrCreateContinuityState(operatorId: string): Promise<ContinuityState> {
   await initDbIfNeeded();
 
   const existing = await db.execute({
@@ -285,8 +268,7 @@ function applyContinuityUpdate(
   );
 
   const identity_alignment = clamp(
-    previous.identity_alignment * 0.8 +
-      (previous.identity_alignment + delta.identity) * 0.2,
+    previous.identity_alignment * 0.8 + (previous.identity_alignment + delta.identity) * 0.2,
     20,
     95,
   );
@@ -328,35 +310,6 @@ export async function submitSessionForm(formData: FormData) {
   await initDbIfNeeded();
 
   const input = parseSessionForm(formData);
-
-  const guardResult = runGuards({
-    stability: input.stability,
-    reference: input.reference,
-    impact: input.impact,
-  });
-
-  if (!guardResult.allowed) {
-    await appendEvent({
-      event_type: "session.precheck_blocked",
-      operator_id: input.operator_id,
-      payload: {
-        trigger: input.trigger,
-        guard_inputs: {
-          stability: input.stability,
-          reference: input.reference,
-          impact: input.impact,
-        },
-        guard_flags: guardResult.flags,
-        guard_passed: false,
-      },
-    });
-
-    redirect(
-      `/session?saved=0&blocked=1&flags=${encodeURIComponent(
-        guardResult.flags.join(","),
-      )}`,
-    );
-  }
 
   const engineInput: SessionInput = {
     trigger: input.trigger,
@@ -510,13 +463,6 @@ export async function submitSessionForm(formData: FormData) {
       outcome: input.outcome,
       clarity_rating: input.clarity_rating,
       lesson: engineResult.lessonLine,
-      guard_inputs: {
-        stability: input.stability,
-        reference: input.reference,
-        impact: input.impact,
-      },
-      guard_flags: guardResult.flags,
-      guard_passed: guardResult.allowed,
     },
   });
 
@@ -534,13 +480,6 @@ export async function submitSessionForm(formData: FormData) {
         intention: next.intention_alignment - previous.intention_alignment,
         action: next.action_alignment - previous.action_alignment,
       },
-      guard_inputs: {
-        stability: input.stability,
-        reference: input.reference,
-        impact: input.impact,
-      },
-      guard_flags: guardResult.flags,
-      guard_passed: guardResult.allowed,
     },
   });
 
@@ -697,7 +636,9 @@ export async function getVolatilityBand(
   return volatility_band;
 }
 
-export async function getRecentSessions(limit = 50): Promise<SessionLogRow[]> {
+export async function getRecentSessions(
+  limit = 50,
+): Promise<SessionLogRow[]> {
   await initDbIfNeeded();
 
   const n = Math.max(1, Math.min(200, Number(limit) || 50));
