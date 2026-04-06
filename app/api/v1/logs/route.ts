@@ -1,6 +1,7 @@
 import { getRecentSessions } from "@/app/session/actions";
 import { apiError, apiOk } from "@/lib/api/responses";
 import { rateLimit } from "@/lib/api/rateLimit";
+import { withTimeout } from "@/lib/utils/withTimeout";
 
 export async function GET(req: Request) {
   const ip = req.headers.get("x-forwarded-for") ?? "local";
@@ -11,24 +12,14 @@ export async function GET(req: Request) {
   }
 
   try {
-    const logs = await getRecentSessions(200);
+    const logs = await withTimeout(getRecentSessions(200), 2000);
     return apiOk({ logs });
   } catch (err) {
     return apiError(err instanceof Error ? err.message : "Unknown error");
   }
 }
-export async function POST() {
-  return apiError("Method not allowed", 405);
-}
 
-export async function PUT() {
-  return apiError("Method not allowed", 405);
-}
-
-export async function PATCH() {
-  return apiError("Method not allowed", 405);
-}
-
-export async function DELETE() {
-  return apiError("Method not allowed", 405);
-}
+export async function POST() { return apiError("Method not allowed", 405); }
+export async function PUT() { return apiError("Method not allowed", 405); }
+export async function PATCH() { return apiError("Method not allowed", 405); }
+export async function DELETE() { return apiError("Method not allowed", 405); }

@@ -1,6 +1,7 @@
 import { getRecentSessions } from "@/app/session/actions";
 import { apiError, apiOk } from "@/lib/api/responses";
 import { rateLimit } from "@/lib/api/rateLimit";
+import { withTimeout } from "@/lib/utils/withTimeout";
 
 export async function GET(req: Request) {
   const ip = req.headers.get("x-forwarded-for") ?? "local";
@@ -11,7 +12,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const sessions = await getRecentSessions(50);
+    const sessions = await withTimeout(getRecentSessions(50), 2000);
     return apiOk({ sessions });
   } catch (err) {
     return apiError(err instanceof Error ? err.message : "Unknown error");
