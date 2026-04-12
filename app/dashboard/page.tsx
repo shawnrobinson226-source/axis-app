@@ -44,6 +44,49 @@ export default async function DashboardPage() {
     },
   ];
 
+  const distortionFrequency = {
+    narrative: 0,
+    emotional: 0,
+    behavioral: 0,
+    perceptual: 0,
+    continuity: 0,
+  };
+
+  const outcomeDistribution = {
+    reduced: 0,
+    unresolved: 0,
+    escalated: 0,
+  };
+
+  for (const session of recentSessions) {
+    if (session.distortion_class in distortionFrequency) {
+      distortionFrequency[
+        session.distortion_class as keyof typeof distortionFrequency
+      ] += 1;
+    }
+
+    if (session.outcome in outcomeDistribution) {
+      outcomeDistribution[session.outcome as keyof typeof outcomeDistribution] +=
+        1;
+    }
+  }
+
+  const { reduced, unresolved, escalated } = outcomeDistribution;
+
+  const stabilityTrend =
+    reduced >= escalated + 2 && reduced >= unresolved
+      ? "↑ improving"
+      : escalated >= reduced + 2 && escalated >= unresolved
+        ? "↓ unstable"
+        : "→ neutral";
+
+  const continuityStatus =
+    reduced >= escalated + 2 && reduced >= unresolved
+      ? "↑ stable"
+      : escalated >= reduced + 2 || unresolved > reduced
+        ? "↓ unstable"
+        : "→ forming";
+
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10">
       <header className="space-y-3">
@@ -100,11 +143,11 @@ export default async function DashboardPage() {
             Which patterns show up most often
           </p>
           <div className="mt-3 space-y-1 text-sm text-zinc-100">
-            <p>narrative: —</p>
-            <p>emotional: —</p>
-            <p>behavioral: —</p>
-            <p>perceptual: —</p>
-            <p>continuity: —</p>
+            <p>narrative: {distortionFrequency.narrative}</p>
+            <p>emotional: {distortionFrequency.emotional}</p>
+            <p>behavioral: {distortionFrequency.behavioral}</p>
+            <p>perceptual: {distortionFrequency.perceptual}</p>
+            <p>continuity: {distortionFrequency.continuity}</p>
           </div>
         </div>
 
@@ -114,9 +157,9 @@ export default async function DashboardPage() {
             How your situations are resolving
           </p>
           <div className="mt-3 space-y-1 text-sm text-zinc-100">
-            <p>reduced: —</p>
-            <p>unresolved: —</p>
-            <p>escalated: —</p>
+            <p>reduced: {outcomeDistribution.reduced}</p>
+            <p>unresolved: {outcomeDistribution.unresolved}</p>
+            <p>escalated: {outcomeDistribution.escalated}</p>
           </div>
         </div>
 
@@ -125,7 +168,9 @@ export default async function DashboardPage() {
           <p className="mt-2 text-sm text-zinc-400">
             Short-term direction of your outcomes
           </p>
-          <p className="mt-3 text-xl font-semibold text-zinc-100">→ neutral</p>
+          <p className="mt-3 text-xl font-semibold text-zinc-100">
+            {stabilityTrend}
+          </p>
         </div>
 
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
@@ -133,7 +178,9 @@ export default async function DashboardPage() {
           <p className="mt-2 text-sm text-zinc-400">
             Overall system stability based on recent outcomes
           </p>
-          <p className="mt-3 text-xl font-semibold text-zinc-100">→ forming</p>
+          <p className="mt-3 text-xl font-semibold text-zinc-100">
+            {continuityStatus}
+          </p>
         </div>
       </section>
 
