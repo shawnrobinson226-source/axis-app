@@ -3,6 +3,7 @@
 VANTA is a deterministic cognitive system designed to reduce distortion, restore continuity, and execute aligned action.
 
 This repository contains the locked **V1 Kernel**: a working full-stack system with a defined taxonomy, session engine, persistence layer, and runtime dashboard.
+Current verified snapshot: V1.2
 
 ---
 
