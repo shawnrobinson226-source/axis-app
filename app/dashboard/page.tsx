@@ -139,6 +139,10 @@ export default async function DashboardPage() {
           Read-only kernel view. Continuity, alignment, open instability load,
           and recent session outcomes.
         </p>
+        <p className="max-w-3xl text-sm leading-6 text-zinc-300">
+          This dashboard reflects patterns from your logged sessions. More
+          entries = more accurate insights.
+        </p>
       </header>
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -227,6 +231,10 @@ export default async function DashboardPage() {
           <p className="mt-2 text-sm text-zinc-400">
             Priority action based on current pattern
           </p>
+          <p className="mt-2 text-xs text-zinc-500">
+            Recommended next step is based on your most recent session and
+            current pattern trend.
+          </p>
           <p className="mt-3 text-sm leading-6 text-zinc-100">
             {recommendedNextStep}
           </p>
@@ -279,6 +287,9 @@ export default async function DashboardPage() {
             <h2 className="text-lg font-medium text-zinc-100">Recent Sessions</h2>
             <p className="mt-1 text-sm text-zinc-400">
               Last five closed sessions from the runtime ledger.
+            </p>
+            <p className="mt-1 text-xs text-zinc-500">
+              Log at least one session to begin generating reliable patterns.
             </p>
           </div>
 
