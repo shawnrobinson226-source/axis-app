@@ -107,6 +107,11 @@ function renderRedirectSteps(redirect: unknown): string[] {
 export default function SessionPage() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [showSavedConfirmation] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("saved") === "1",
+  );
 
   function handleAnalyze(trigger: string) {
     if (!trigger.trim()) return;
@@ -137,7 +142,7 @@ export default function SessionPage() {
             id="trigger"
             name="trigger"
             required
-            placeholder="Describe the situation..."
+            placeholder="e.g., I got critical feedback from my manager and immediately felt defensive."
             onBlur={(e) => handleAnalyze(e.target.value)}
             className="w-full rounded-md border border-zinc-500 bg-zinc-800 p-3 text-zinc-50"
           />
@@ -222,7 +227,7 @@ export default function SessionPage() {
             id="next_action"
             name="next_action"
             required
-            placeholder="Next action"
+            placeholder="e.g., Pause, rewrite the event in factual terms, and send one clear response."
             className="w-full rounded-md border border-zinc-500 bg-zinc-800 p-3 text-zinc-50"
           />
         </div>
@@ -299,6 +304,18 @@ export default function SessionPage() {
         >
           {isPending ? "Saving..." : "Save"}
         </button>
+
+        {showSavedConfirmation && (
+          <p className="text-sm text-zinc-300">
+            Session logged.{" "}
+            <a
+              href="/dashboard"
+              className="text-zinc-100 underline decoration-zinc-500 underline-offset-2 transition hover:decoration-zinc-300"
+            >
+              View in Dashboard →
+            </a>
+          </p>
+        )}
       </form>
     </main>
   );
