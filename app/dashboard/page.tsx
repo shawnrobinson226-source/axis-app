@@ -130,13 +130,13 @@ export default async function DashboardPage() {
     <main className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10">
       <header className="space-y-3">
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
-          VANTA / Dashboard
+          Continuity Engine / Dashboard
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
           Runtime Status Report
         </h1>
         <p className="max-w-3xl text-sm leading-6 text-zinc-400">
-          Read-only kernel view. Continuity, alignment, open instability load,
+          Read-only Continuity Engine view. Continuity, alignment, open instability load,
           and recent session outcomes.
         </p>
         <p className="max-w-3xl text-sm leading-6 text-zinc-300">

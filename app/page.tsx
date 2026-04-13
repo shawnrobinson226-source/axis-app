@@ -102,7 +102,7 @@ export default async function HomePage() {
   </h1>
 
   <p className="max-w-3xl text-base leading-7 text-zinc-300">
-    VANTA takes any situation, breaks it down, and gives you a structured path forward — so you can act instead of overthink.
+    Continuity Engine takes any situation, breaks it down, and gives you a structured path forward so you can act instead of overthink.
   </p>
 
   <p className="text-sm text-zinc-400">
@@ -119,7 +119,7 @@ export default async function HomePage() {
   </div>
 </div>
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
-          VANTA / Entry Gate
+          Continuity Engine / Entry Gate
         </p>
 
         <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-zinc-100">
@@ -127,7 +127,7 @@ export default async function HomePage() {
         </h1>
 
         <p className="max-w-3xl text-base leading-7 text-zinc-400">
-          VANTA is a state-resolution system. It takes a raw trigger, classifies
+          Continuity Engine is a state-resolution system. It takes a raw trigger, classifies
           the distortion, maps the response path, logs the result, and updates
           continuity over time.
         </p>
@@ -201,7 +201,7 @@ export default async function HomePage() {
       </section>
 
       <section className="grid gap-5 md:grid-cols-2">
-        <Card title="What VANTA Is">
+        <Card title="What Continuity Engine Is">
           <ul className="space-y-2">
             <li>A deterministic state-processing system.</li>
             <li>A way to convert raw triggers into structured action.</li>
@@ -210,7 +210,7 @@ export default async function HomePage() {
           </ul>
         </Card>
 
-        <Card title="What VANTA Is Not">
+        <Card title="What Continuity Engine Is Not">
           <ul className="space-y-2">
             <li>Not journaling.</li>
             <li>Not therapy.</li>

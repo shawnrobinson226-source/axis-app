@@ -121,7 +121,7 @@ export default function SessionPage() {
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10">
-      <h1 className="text-2xl text-white">Session</h1>
+      <h1 className="text-2xl text-white">Continuity Engine Session</h1>
 
       <form action={submitSessionForm} className="space-y-6">
         <input type="hidden" name="operator_id" value="op_legacy" />
@@ -172,7 +172,7 @@ export default function SessionPage() {
             </div>
 
             <div>
-              <div className="text-sm text-zinc-400">Protocol</div>
+              <div className="text-sm text-zinc-400">Signal Protocol</div>
               <ol className="ml-5 list-decimal space-y-1">
                 {redirectSteps.length > 0 ? (
                   redirectSteps.map((step, i) => <li key={i}>{step}</li>)
@@ -189,7 +189,7 @@ export default function SessionPage() {
             className="text-sm font-medium text-zinc-100"
             htmlFor="distortion_class"
           >
-            Distortion class
+            Distortion Class
           </label>
           <select
             id="distortion_class"
@@ -204,6 +204,10 @@ export default function SessionPage() {
               </option>
             ))}
           </select>
+          <p className="text-sm text-zinc-300">
+            Choose the primary pattern driving this situation. This determines
+            the response path used for the session.
+          </p>
           <div className="space-y-1 rounded-md border border-zinc-700 bg-zinc-900 p-3 text-xs text-zinc-300">
             <p className="text-zinc-200">Distortion helper definitions:</p>
             {DISTORTION_HELPERS.map((item) => (
@@ -216,15 +220,18 @@ export default function SessionPage() {
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-zinc-100" htmlFor="next_action">
-            Next action
+            Execution Step
           </label>
           <textarea
             id="next_action"
             name="next_action"
             required
-            placeholder="Next action"
+            placeholder="e.g., Rewrite the event in factual terms and send one clear response."
             className="w-full rounded-md border border-zinc-500 bg-zinc-800 p-3 text-zinc-50"
           />
+          <p className="text-sm text-zinc-300">
+            Enter the next concrete action to take now. Keep it short and specific.
+          </p>
         </div>
 
         <div className="space-y-2">
