@@ -259,7 +259,7 @@ export default function SessionPage() {
             className="text-sm font-medium text-zinc-100"
             htmlFor="clarity_0_10"
           >
-            Continuity score (0-10)
+            Continuity Score (0–10)
           </label>
           <input
             id="clarity_0_10"
@@ -271,6 +271,10 @@ export default function SessionPage() {
             placeholder="Continuity score (0-10)"
             className="w-full rounded-md border border-zinc-500 bg-zinc-800 p-3 text-zinc-50"
           />
+          <p className="text-sm text-zinc-300">
+            Rate current continuity for this situation on a 0 to 10 scale. 0 =
+            fully broken, 10 = fully aligned.
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -278,7 +282,7 @@ export default function SessionPage() {
             className="text-sm font-medium text-zinc-100"
             htmlFor="steps_completed"
           >
-            Steps completed (0-9)
+            Steps Completed
           </label>
           <input
             id="steps_completed"
@@ -290,6 +294,10 @@ export default function SessionPage() {
             placeholder="Steps completed (0-9)"
             className="w-full rounded-md border border-zinc-500 bg-zinc-800 p-3 text-zinc-50"
           />
+          <p className="text-sm text-zinc-300">
+            Enter how many execution steps were completed in this session so
+            far.
+          </p>
         </div>
 
         <button
