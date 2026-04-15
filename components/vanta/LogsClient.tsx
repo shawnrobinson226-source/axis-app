@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useTransition } from "react";
 import {
@@ -122,7 +122,7 @@ export default function LogsClient({
     <main style={{ padding: 24, maxWidth: 1280 }}>
       <h1 style={{ marginBottom: 8 }}>Logs</h1>
       <p style={{ marginTop: 0, opacity: 0.8 }}>
-        Recent deterministic DRE sessions from the locked kernel.
+        Review your recent sessions and outcomes.
       </p>
 
       <div
