@@ -205,6 +205,11 @@ export default function DashboardPage() {
                 ? "Maintain the current pattern. Review logs and continue executing without adding complexity."
                 : "Start a new session and clarify the current trigger before making the next move.";
 
+  const recommendationText =
+    recentSessions.length === 0
+      ? "Log your first session to begin tracking patterns."
+      : recommendedNextStep;
+
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10">
       <header className="space-y-3">
@@ -315,7 +320,7 @@ export default function DashboardPage() {
             current pattern trend.
           </p>
           <p className="mt-3 text-sm leading-6 text-zinc-100">
-            {recommendedNextStep}
+            {recommendationText}
           </p>
           <a
             href="/session"
