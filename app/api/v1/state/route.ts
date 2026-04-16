@@ -10,8 +10,10 @@ export async function GET(req: Request) {
     return apiError("Rate limit exceeded", 429);
   }
   try {
-    const operatorId =
-      req.headers.get("x-operator-id") ?? "op_legacy";
+    const operatorId = req.headers.get("x-operator-id")?.trim() ?? "";
+    if (!operatorId) {
+      return apiError("Missing operator identity", 401);
+    }
 
     const [state, volatility] = await Promise.all([
       withTimeout(getDashboardState(operatorId), 3000),

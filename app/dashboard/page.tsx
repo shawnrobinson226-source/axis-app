@@ -1,4 +1,7 @@
-import { getDashboardState, getVolatilityBand } from "../session/actions";
+"use client";
+
+import { useEffect, useState } from "react";
+import { getOrCreateOperatorId } from "@/lib/operator/client";
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -17,11 +20,87 @@ function continuityTone(score: number) {
   return "text-emerald-300";
 }
 
-export default async function DashboardPage() {
-  const [state, volatilityBand] = await Promise.all([
-    getDashboardState("op_legacy"),
-    getVolatilityBand("op_legacy"),
-  ]);
+type DashboardState = {
+  continuity: {
+    operator_id: string;
+    perception_alignment: number;
+    identity_alignment: number;
+    intention_alignment: number;
+    action_alignment: number;
+    continuity_score: number;
+    updated_at: string;
+  };
+  activeFracturesCount: number;
+  recentSessions: Array<{
+    id: string;
+    trigger: string;
+    distortion_class:
+      | "narrative"
+      | "emotional"
+      | "behavioral"
+      | "perceptual"
+      | "continuity";
+    outcome: "reduced" | "unresolved" | "escalated";
+    clarity_rating: number;
+    continuity_before: number;
+    continuity_after: number;
+    created_at: string;
+  }>;
+};
+
+const EMPTY_STATE: DashboardState = {
+  continuity: {
+    operator_id: "",
+    perception_alignment: 50,
+    identity_alignment: 50,
+    intention_alignment: 50,
+    action_alignment: 50,
+    continuity_score: 50,
+    updated_at: "unavailable",
+  },
+  activeFracturesCount: 0,
+  recentSessions: [],
+};
+
+export default function DashboardPage() {
+  const [operatorId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return getOrCreateOperatorId();
+  });
+  const [state, setState] = useState<DashboardState>(EMPTY_STATE);
+  const [volatilityBand, setVolatilityBand] = useState<"low" | "medium" | "high">("low");
+
+  useEffect(() => {
+    if (!operatorId) return;
+
+    void (async () => {
+      try {
+        const response = await fetch("/api/v1/state", {
+          method: "GET",
+          headers: {
+            "x-operator-id": operatorId,
+          },
+          cache: "no-store",
+        });
+
+        const body = (await response.json()) as {
+          ok?: boolean;
+          data?: DashboardState & { volatilityBand?: "low" | "medium" | "high" };
+        };
+
+        if (!response.ok || !body.ok || !body.data) return;
+
+        setState({
+          continuity: body.data.continuity,
+          activeFracturesCount: body.data.activeFracturesCount,
+          recentSessions: body.data.recentSessions ?? [],
+        });
+        setVolatilityBand(body.data.volatilityBand ?? "low");
+      } catch {
+        // Keep neutral fallback state on load failure.
+      }
+    })();
+  }, [operatorId]);
 
   const { continuity, activeFracturesCount, recentSessions } = state;
 

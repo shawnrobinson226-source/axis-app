@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
-  getRecentSessions,
   resetSessions,
   type DistortionClass,
   type SessionOutcome,
   type SessionLogRow,
 } from "@/app/session/actions";
+import { getOrCreateOperatorId } from "@/lib/operator/client";
 
 function buttonStyle(primary = false) {
   return {
@@ -69,15 +69,17 @@ function deltaText(before: number, after: number) {
 
 type LogsClientProps = {
   initialRows: SessionLogRow[];
-  operatorId?: string;
   initialLimit?: number;
 };
 
 export default function LogsClient({
   initialRows,
-  operatorId = "op_legacy",
   initialLimit = 50,
 }: LogsClientProps) {
+  const [operatorId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return getOrCreateOperatorId();
+  });
   const [limit, setLimit] = useState(initialLimit);
   const [rows, setRows] = useState<SessionLogRow[]>(initialRows);
   const [msg, setMsg] = useState<string | null>(null);
@@ -85,13 +87,40 @@ export default function LogsClient({
 
   async function load(nextLimit = limit) {
     setMsg(null);
+    if (!operatorId) {
+      setRows([]);
+      return;
+    }
+
     try {
-      const data = await getRecentSessions(operatorId, nextLimit);
-      setRows(data);
+      const response = await fetch(`/api/v1/logs?limit=${nextLimit}`, {
+        method: "GET",
+        headers: {
+          "x-operator-id": operatorId,
+        },
+        cache: "no-store",
+      });
+
+      const body = (await response.json()) as {
+        ok?: boolean;
+        data?: { logs?: SessionLogRow[] };
+        error?: string;
+      };
+
+      if (!response.ok || !body.ok) {
+        throw new Error(body.error ?? "Failed to load session logs.");
+      }
+
+      setRows(body.data?.logs ?? []);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Failed to load session logs.");
     }
   }
+
+  useEffect(() => {
+    void load(initialLimit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [operatorId]);
 
   function apply() {
     startTransition(async () => {
@@ -109,6 +138,10 @@ export default function LogsClient({
     setMsg(null);
     startTransition(async () => {
       try {
+        if (!operatorId) {
+          throw new Error("Operator identity is required.");
+        }
+
         await resetSessions(operatorId);
         await load(limit);
         setMsg("All sessions were cleared.");

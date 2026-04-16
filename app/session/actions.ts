@@ -122,7 +122,7 @@ function parseOutcome(value: string): SessionOutcome {
 }
 
 function parseSessionForm(formData: FormData): ParsedSessionForm {
-  const operator_id = asString(formData.get("operator_id")) || "op_legacy";
+  const operator_id = asString(formData.get("operator_id"));
   const trigger = asString(formData.get("trigger"));
   const distortion_class = parseDistortionClass(
     asString(formData.get("distortion_class")),
@@ -144,6 +144,7 @@ function parseSessionForm(formData: FormData): ParsedSessionForm {
   const reference = asString(formData.get("reference")) === "yes";
   const impact = clamp(asNumber(formData.get("impact"), 3), 0, 10);
 
+  if (!operator_id) throw new Error("Operator identity is required.");
   if (!trigger) throw new Error("Trigger is required.");
   if (!next_action) throw new Error("Next action is required.");
 
@@ -644,8 +645,12 @@ export async function submitSessionForm(formData: FormData) {
 }
 
 export async function getDashboardState(
-  operatorId = "op_legacy",
+  operatorId: string,
 ): Promise<DashboardState> {
+  if (!operatorId.trim()) {
+    throw new Error("Operator identity is required.");
+  }
+
   await initDbIfNeeded();
 
   const continuity = await getOrCreateContinuityState(operatorId);
@@ -704,8 +709,12 @@ export async function getDashboardState(
 }
 
 export async function getVolatilityBand(
-  operatorId = "op_legacy",
+  operatorId: string,
 ): Promise<"low" | "medium" | "high"> {
+  if (!operatorId.trim()) {
+    throw new Error("Operator identity is required.");
+  }
+
   await initDbIfNeeded();
 
   const existing = await db.execute({
@@ -850,7 +859,11 @@ export async function getRecentSessions(operatorId: string, limit = 50): Promise
   });
 }
 
-export async function resetSessions(operatorId = "op_legacy") {
+export async function resetSessions(operatorId: string) {
+  if (!operatorId.trim()) {
+    throw new Error("Operator identity is required.");
+  }
+
   await initDbIfNeeded();
 
   await db.execute({

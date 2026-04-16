@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import PreflightChecklist from "@/components/vanta/PreflightChecklist";
 import { analyzeTrigger } from "@/lib/kernel/v1/analyze";
 import { submitSessionForm } from "./actions";
+import { getOrCreateOperatorId } from "@/lib/operator/client";
 
 type PreviewValue =
   | string
@@ -107,6 +108,8 @@ function renderRedirectSteps(redirect: unknown): string[] {
 export default function SessionPage() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [isPending, startTransition] = useTransition();
+  const operatorId =
+    typeof window === "undefined" ? "" : getOrCreateOperatorId();
   const [showSavedConfirmation] = useState(
     () =>
       typeof window !== "undefined" &&
@@ -129,7 +132,7 @@ export default function SessionPage() {
       <h1 className="text-2xl text-white">Continuity Engine Session</h1>
 
       <form action={submitSessionForm} className="space-y-6">
-        <input type="hidden" name="operator_id" value="op_legacy" />
+        <input type="hidden" name="operator_id" value={operatorId} />
 
         <div className="space-y-1">
           <p className="text-sm font-medium text-zinc-100">Quick Check</p>

@@ -2,13 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { resetSessions } from "@/app/session/actions";
+import { getOrCreateOperatorId } from "@/lib/operator/client";
 
 export default function ResetButton() {
   const [isPending, startTransition] = useTransition();
   const [operatorId] = useState(() => {
-    if (typeof window === "undefined") return "op_legacy";
-    const stored = window.localStorage.getItem("vanta_operator_id");
-    return stored && stored.trim() ? stored.trim() : "op_legacy";
+    if (typeof window === "undefined") return "";
+    return getOrCreateOperatorId();
   });
 
   function handleReset() {

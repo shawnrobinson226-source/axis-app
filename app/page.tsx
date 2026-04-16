@@ -1,6 +1,4 @@
 ﻿import Link from "next/link";
-import { getDashboardState, getVolatilityBand } from "./session/actions";
-import { withTimeout } from "@/lib/utils/withTimeout";
 
 function Card({
   title,
@@ -57,36 +55,23 @@ async function getHomeStateSafe(): Promise<{
   volatilityBand: "low" | "medium" | "high";
   degraded: boolean;
 }> {
-  try {
-    const [state, volatilityBand] = await Promise.all([
-      withTimeout(getDashboardState("op_legacy"), 3000),
-      withTimeout(getVolatilityBand("op_legacy"), 3000),
-    ]);
-
-    return {
-      state,
-      volatilityBand,
-      degraded: false,
-    };
-  } catch {
-    return {
-      state: {
-        continuity: {
-          operator_id: "op_legacy",
-          perception_alignment: 50,
-          identity_alignment: 50,
-          intention_alignment: 50,
-          action_alignment: 50,
-          continuity_score: 50,
-          updated_at: "unavailable",
-        },
-        activeFracturesCount: 0,
-        recentSessions: [],
+  return {
+    state: {
+      continuity: {
+        operator_id: "",
+        perception_alignment: 50,
+        identity_alignment: 50,
+        intention_alignment: 50,
+        action_alignment: 50,
+        continuity_score: 50,
+        updated_at: "unavailable",
       },
-      volatilityBand: "low",
-      degraded: true,
-    };
-  }
+      activeFracturesCount: 0,
+      recentSessions: [],
+    },
+    volatilityBand: "low",
+    degraded: false,
+  };
 }
 
 export default async function HomePage() {
