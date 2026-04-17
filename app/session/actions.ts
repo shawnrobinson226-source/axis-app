@@ -1,14 +1,9 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, initDbIfNeeded } from "@/lib/db/client";
-import { runGuards } from "../../lib/engine/guards";
-import {
-  runSessionEngine,
-  type SessionInput,
-} from "@/lib/engine/executionFlow";
+import { processSession } from "@/lib/session/process";
 
 export type DistortionClass =
   | "narrative"
@@ -166,48 +161,6 @@ function parseSessionForm(formData: FormData): ParsedSessionForm {
   };
 }
 
-async function appendEvent(args: {
-  event_type: string;
-  operator_id: string;
-  session_id?: string | null;
-  distortion_id?: string | null;
-  payload: Record<string, unknown>;
-  meta?: Record<string, unknown> | null;
-}) {
-  await db.execute({
-    sql: `
-      INSERT INTO events (
-        event_id,
-        event_type,
-        occurred_at,
-        schema_version,
-        actor_kind,
-        actor_id,
-        operator_id,
-        session_id,
-        fracture_id,
-        distortion_id,
-        payload_json,
-        meta_json
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `,
-    args: [
-      randomUUID(),
-      args.event_type,
-      new Date().toISOString(),
-      "v1",
-      "human",
-      args.operator_id,
-      args.operator_id,
-      args.session_id ?? null,
-      null,
-      args.distortion_id ?? null,
-      JSON.stringify(args.payload),
-      args.meta ? JSON.stringify(args.meta) : null,
-    ],
-  });
-}
-
 async function getOrCreateContinuityState(
   operatorId: string,
 ): Promise<ContinuityState> {
@@ -270,61 +223,6 @@ async function getOrCreateContinuityState(
   };
 }
 
-function applyContinuityUpdate(
-  previous: ContinuityState,
-  delta: {
-    perception: number;
-    identity: number;
-    intention: number;
-    action: number;
-  },
-): ContinuityState {
-  const perception_alignment = clamp(
-    previous.perception_alignment + delta.perception,
-    20,
-    95,
-  );
-
-  const identity_alignment = clamp(
-    previous.identity_alignment * 0.8 +
-      (previous.identity_alignment + delta.identity) * 0.2,
-    20,
-    95,
-  );
-
-  const intention_alignment = clamp(
-    previous.intention_alignment + delta.intention,
-    20,
-    95,
-  );
-
-  const action_alignment = clamp(
-    previous.action_alignment + delta.action,
-    20,
-    95,
-  );
-
-  const continuity_score = clamp(
-    (perception_alignment +
-      identity_alignment +
-      intention_alignment +
-      action_alignment) /
-      4,
-    20,
-    95,
-  );
-
-  return {
-    operator_id: previous.operator_id,
-    perception_alignment,
-    identity_alignment,
-    intention_alignment,
-    action_alignment,
-    continuity_score,
-    updated_at: new Date().toISOString(),
-  };
-}
-
 
 
 // âœ… CORE SAVE FUNCTION (API + Server Action safe)
@@ -334,312 +232,27 @@ export async function saveSessionCore(input: {
   distortion_class: string;
   next_action: string;
 }) {
-  const { operator_id, trigger, distortion_class, next_action } = input;
-
-  if (!trigger) throw new Error("Trigger required");
-  if (!distortion_class) throw new Error("Distortion class required");
-  if (!next_action) throw new Error("Next action is required.");
-
-  await initDbIfNeeded();
-
-  const guardResult = runGuards({
+  return processSession({
+    operator_id: input.operator_id,
+    trigger: input.trigger,
+    distortion_class: input.distortion_class,
+    origin: "api",
+    thought: input.trigger,
+    emotion: "unspecified",
+    behavior: "unspecified",
+    protocol: "aligned_action",
+    next_action: input.next_action,
+    clarity_rating: 5,
+    outcome: "reduced",
     stability: 5,
     reference: true,
     impact: 3,
   });
-
-  if (!guardResult.allowed) {
-    throw new Error("Guard blocked session");
-  }
-
-  const engineInput: SessionInput = {
-    trigger,
-    distortionClass: distortion_class as DistortionClass,
-    origin: "api",
-    thought: trigger,
-    emotion: "unspecified",
-    behavior: "unspecified",
-    protocol: "aligned_action",
-    nextAction: next_action,
-    clarityRating: 5,
-    outcome: "reduced",
-  };
-
-  const engineResult = runSessionEngine(engineInput);
-  const sessionId = randomUUID();
-
-  const previous = await getOrCreateContinuityState(operator_id);
-  const next = applyContinuityUpdate(previous, engineResult.continuityDelta);
-
-  await db.execute({
-    sql: `
-      INSERT INTO sessions (
-        id,
-        operator_id,
-        trigger,
-        distortion_class,
-        origin,
-        thought,
-        emotion,
-        behavior,
-        protocol,
-        next_action,
-        clarity_rating,
-        outcome,
-        steps_completed,
-        continuity_score_before,
-        continuity_score_after,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `,
-    args: [
-      sessionId,
-      operator_id,
-      trigger,
-      engineResult.distortion.class,
-      "api",
-      trigger,
-      "unspecified",
-      "unspecified",
-      "aligned_action",
-      next_action,
-      engineResult.session.exitStateClarityRating,
-      engineResult.session.outcome,
-      engineResult.session.stepsCompleted,
-      previous.continuity_score,
-      next.continuity_score,
-      new Date().toISOString(),
-    ],
-  });
-
-  return { ok: true, sessionId };
 }
 
 export async function submitSessionForm(formData: FormData) {
-  await initDbIfNeeded();
-
   const input = parseSessionForm(formData);
-
-  const guardResult = runGuards({
-    stability: input.stability,
-    reference: input.reference,
-    impact: input.impact,
-  });
-
-  if (!guardResult.allowed) {
-    await appendEvent({
-      event_type: "session.precheck_blocked",
-      operator_id: input.operator_id,
-      payload: {
-        trigger: input.trigger,
-        guard_inputs: {
-          stability: input.stability,
-          reference: input.reference,
-          impact: input.impact,
-        },
-        guard_flags: guardResult.flags,
-        guard_passed: false,
-      },
-    });
-
-    redirect(
-      `/session?saved=0&blocked=1&flags=${encodeURIComponent(
-        guardResult.flags.join(","),
-      )}`,
-    );
-  }
-
-  const engineInput: SessionInput = {
-    trigger: input.trigger,
-    distortionClass: input.distortion_class,
-    origin: input.origin ?? "local",
-    thought: input.thought,
-    emotion: input.emotion,
-    behavior: input.behavior,
-    protocol: input.protocol,
-    nextAction: input.next_action,
-    clarityRating: input.clarity_rating,
-    outcome: input.outcome,
-  };
-
-  const engineResult = runSessionEngine(engineInput);
-  const sessionId = randomUUID();
-
-  const previous = await getOrCreateContinuityState(input.operator_id);
-  const next = applyContinuityUpdate(previous, engineResult.continuityDelta);
-
-  await db.execute({
-    sql: `
-      INSERT INTO sessions (
-        id,
-        operator_id,
-        trigger,
-        distortion_class,
-        origin,
-        thought,
-        emotion,
-        behavior,
-        protocol,
-        next_action,
-        clarity_rating,
-        outcome,
-        steps_completed,
-        continuity_score_before,
-        continuity_score_after,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `,
-    args: [
-      sessionId,
-      input.operator_id,
-      input.trigger,
-      engineResult.distortion.class,
-      input.origin,
-      input.thought,
-      input.emotion,
-      input.behavior,
-      input.protocol,
-      input.next_action,
-      engineResult.session.exitStateClarityRating,
-      engineResult.session.outcome,
-      engineResult.session.stepsCompleted,
-      previous.continuity_score,
-      next.continuity_score,
-      new Date().toISOString(),
-    ],
-  });
-
-  await db.execute({
-    sql: `
-      INSERT INTO continuity_states (
-        operator_id,
-        perception_alignment,
-        identity_alignment,
-        intention_alignment,
-        action_alignment,
-        continuity_score,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(operator_id) DO UPDATE SET
-        perception_alignment = excluded.perception_alignment,
-        identity_alignment = excluded.identity_alignment,
-        intention_alignment = excluded.intention_alignment,
-        action_alignment = excluded.action_alignment,
-        continuity_score = excluded.continuity_score,
-        updated_at = excluded.updated_at
-    `,
-    args: [
-      next.operator_id,
-      next.perception_alignment,
-      next.identity_alignment,
-      next.intention_alignment,
-      next.action_alignment,
-      next.continuity_score,
-      next.updated_at,
-    ],
-  });
-
-  await db.execute({
-    sql: `
-      INSERT INTO derived_session_index (
-        operator_id,
-        session_id,
-        occurred_at,
-        confirmed_class,
-        outcome,
-        clarity_rating,
-        steps_completed,
-        continuity_before,
-        continuity_after,
-        continuity_delta,
-        protocol_type,
-        formula_version,
-        is_complete,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(operator_id, session_id) DO UPDATE SET
-        occurred_at = excluded.occurred_at,
-        confirmed_class = excluded.confirmed_class,
-        outcome = excluded.outcome,
-        clarity_rating = excluded.clarity_rating,
-        steps_completed = excluded.steps_completed,
-        continuity_before = excluded.continuity_before,
-        continuity_after = excluded.continuity_after,
-        continuity_delta = excluded.continuity_delta,
-        protocol_type = excluded.protocol_type,
-        formula_version = excluded.formula_version,
-        is_complete = excluded.is_complete,
-        updated_at = excluded.updated_at
-    `,
-    args: [
-      input.operator_id,
-      sessionId,
-      new Date().toISOString(),
-      engineResult.distortion.class,
-      engineResult.session.outcome,
-      engineResult.session.exitStateClarityRating,
-      engineResult.session.stepsCompleted,
-      previous.continuity_score,
-      next.continuity_score,
-      next.continuity_score - previous.continuity_score,
-      input.protocol,
-      "v1",
-      1,
-      new Date().toISOString(),
-    ],
-  });
-
-  await appendEvent({
-    event_type: "session.created",
-    operator_id: input.operator_id,
-    session_id: sessionId,
-    payload: {
-      engine: engineResult,
-      trigger: input.trigger,
-      distortion_class: input.distortion_class,
-      protocol: input.protocol,
-      outcome: input.outcome,
-      clarity_rating: input.clarity_rating,
-      lesson: engineResult.lessonLine,
-      guard_inputs: {
-        stability: input.stability,
-        reference: input.reference,
-        impact: input.impact,
-      },
-      guard_flags: guardResult.flags,
-      guard_passed: guardResult.allowed,
-    },
-  });
-
-  await appendEvent({
-    event_type: "continuity.calculated",
-    operator_id: input.operator_id,
-    session_id: sessionId,
-    payload: {
-      before: previous,
-      after: next,
-      delta: {
-        continuity: next.continuity_score - previous.continuity_score,
-        perception: next.perception_alignment - previous.perception_alignment,
-        identity: next.identity_alignment - previous.identity_alignment,
-        intention: next.intention_alignment - previous.intention_alignment,
-        action: next.action_alignment - previous.action_alignment,
-      },
-      guard_inputs: {
-        stability: input.stability,
-        reference: input.reference,
-        impact: input.impact,
-      },
-      guard_flags: guardResult.flags,
-      guard_passed: guardResult.allowed,
-    },
-  });
-
-  revalidatePath("/");
-  revalidatePath("/session");
-  revalidatePath("/dashboard");
-  revalidatePath("/logs");
-  revalidatePath("/settings");
+  await processSession(input);
 
   redirect("/session?saved=1");
 }

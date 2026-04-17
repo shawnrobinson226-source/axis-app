@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import PreflightChecklist from "@/components/vanta/PreflightChecklist";
 import { analyzeTrigger } from "@/lib/kernel/v1/analyze";
-import { submitSessionForm } from "./actions";
 import { getOrCreateOperatorId } from "@/lib/operator/client";
 
 type PreviewValue =
@@ -108,13 +107,15 @@ function renderRedirectSteps(redirect: unknown): string[] {
 export default function SessionPage() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isSaving, setIsSaving] = useState(false);
   const operatorId =
     typeof window === "undefined" ? "" : getOrCreateOperatorId();
-  const [showSavedConfirmation] = useState(
+  const [showSavedConfirmation, setShowSavedConfirmation] = useState(
     () =>
       typeof window !== "undefined" &&
       new URLSearchParams(window.location.search).get("saved") === "1",
   );
+  const [saveError, setSaveError] = useState("");
 
   function handleAnalyze(trigger: string) {
     if (!trigger.trim()) return;
@@ -127,12 +128,67 @@ export default function SessionPage() {
 
   const redirectSteps = renderRedirectSteps(preview?.redirect);
 
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!operatorId) {
+      setSaveError("Operator identity is required.");
+      setShowSavedConfirmation(false);
+      return;
+    }
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    const payload = {
+      trigger: String(formData.get("trigger") ?? ""),
+      distortion_class: String(formData.get("distortion_class") ?? ""),
+      next_action: String(formData.get("next_action") ?? ""),
+      outcome: String(formData.get("outcome") ?? ""),
+      clarity_rating: Number(formData.get("clarity_0_10") ?? 5),
+      stability: Number(formData.get("stability") ?? 5),
+      reference: String(formData.get("reference") ?? "") === "yes",
+      impact: Number(formData.get("impact") ?? 3),
+    };
+
+    setIsSaving(true);
+    setSaveError("");
+    setShowSavedConfirmation(false);
+
+    try {
+      const response = await fetch("/api/v1/session", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-operator-id": operatorId,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const body = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+      };
+
+      if (!response.ok || !body.ok) {
+        throw new Error(body.error ?? "Failed to save session.");
+      }
+
+      setShowSavedConfirmation(true);
+      form.reset();
+      setPreview(null);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Failed to save session.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10">
       <h1 className="text-2xl text-white">Continuity Engine Session</h1>
 
-      <form action={submitSessionForm} className="space-y-6">
-        <input type="hidden" name="operator_id" value={operatorId} />
+      <form onSubmit={handleSubmit} className="space-y-6">
 
         <div className="space-y-1">
           <p className="text-sm font-medium text-zinc-100">Quick Check</p>
@@ -324,10 +380,10 @@ export default function SessionPage() {
 
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || isSaving}
           className="rounded-md bg-zinc-100 px-4 py-2 text-zinc-900 disabled:opacity-60"
         >
-          {isPending ? "Saving..." : "Save"}
+          {isSaving ? "Saving..." : "Save"}
         </button>
 
         {showSavedConfirmation && (
@@ -341,6 +397,8 @@ export default function SessionPage() {
             </a>
           </p>
         )}
+
+        {saveError ? <p className="text-sm text-red-300">{saveError}</p> : null}
       </form>
     </main>
   );
