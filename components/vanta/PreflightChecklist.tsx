@@ -78,7 +78,7 @@ export default function PreflightChecklist({ onBlockChange }: Props) {
         <div>
           <h2 className="text-lg font-semibold">Pre-Flight Check</h2>
           <p className="text-sm text-zinc-300">
-            Runtime guards run before the session engine. This does not change the locked loop.
+            Checks run before execution. This does not change the system flow.
           </p>
         </div>
 

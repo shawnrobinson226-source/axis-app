@@ -260,7 +260,7 @@ export default function SessionPage() {
             className="text-sm font-medium text-zinc-100"
             htmlFor="distortion_class"
           >
-            Distortion Class
+            Select primary distortion
           </label>
           <select
             id="distortion_class"
@@ -268,7 +268,7 @@ export default function SessionPage() {
             required
             className="w-full rounded-md border border-zinc-500 bg-zinc-800 p-3 text-zinc-50"
           >
-            <option value="">Select distortion</option>
+            <option value="">Select primary distortion</option>
             {DISTORTION_HELPERS.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
@@ -307,7 +307,7 @@ export default function SessionPage() {
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-zinc-100" htmlFor="outcome">
-            Outcome
+            Expected outcome
           </label>
           <select
             id="outcome"

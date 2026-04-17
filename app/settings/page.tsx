@@ -50,12 +50,12 @@ export default function SettingsPage() {
         </div>
       </Card>
 
-      <Card title="System Notes (V1)">
+      <Card title="System Notes">
         <ul style={{ margin: 0, paddingLeft: 18, opacity: 0.9, lineHeight: 1.5 }}>
           <li>Deterministic engine.</li>
           <li>No predictive behavior.</li>
           <li>No external integrations.</li>
-          <li>Operator remains the decision authority.</li>
+          <li>You remain the decision authority.</li>
         </ul>
 
         <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>

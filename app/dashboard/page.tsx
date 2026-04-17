@@ -220,8 +220,7 @@ export default function DashboardPage() {
           Runtime Status Report
         </h1>
         <p className="max-w-3xl text-sm leading-6 text-zinc-400">
-          Read-only Continuity Engine view. Continuity, alignment, open instability load,
-          and recent session outcomes.
+          Read-only system view of your continuity, alignment, and recent outcomes.
         </p>
         <p className="max-w-3xl text-sm leading-6 text-zinc-300">
           This dashboard reflects patterns from your logged sessions. More
@@ -253,7 +252,7 @@ export default function DashboardPage() {
             {activeFracturesCount}
           </p>
           <p className="mt-3 text-sm text-zinc-500">
-            Count of unresolved or escalated sessions.
+            Sessions still unresolved or escalating.
           </p>
         </div>
 
@@ -263,14 +262,14 @@ export default function DashboardPage() {
             {volatilityBand}
           </p>
           <p className="mt-3 text-sm text-zinc-500">
-            Derived stability cache. Low is steadier. High means drift risk.
+            Low is steady. High means drift risk.
           </p>
         </div>
 
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
           <p className="text-sm text-zinc-200">Distortion Frequency</p>
           <p className="mt-2 text-sm text-zinc-400">
-            Which patterns show up most often
+            Patterns showing up most often
           </p>
           <div className="mt-3 space-y-1 text-sm text-zinc-100">
             <p>narrative: {distortionFrequency.narrative}</p>
@@ -342,7 +341,7 @@ export default function DashboardPage() {
         <div className="mb-5">
           <h2 className="text-lg font-medium text-zinc-100">Alignment Dimensions</h2>
           <p className="mt-1 text-sm text-zinc-400">
-            Equal-weight continuity model across four domains.
+            Balance across four core areas.
           </p>
         </div>
 
@@ -373,7 +372,7 @@ export default function DashboardPage() {
           <div>
             <h2 className="text-lg font-medium text-zinc-100">Recent Sessions</h2>
             <p className="mt-1 text-sm text-zinc-400">
-              Last five closed sessions from the runtime ledger.
+              Your most recent completed sessions.
             </p>
             <p className="mt-1 text-xs text-zinc-500">
               Log at least one session to begin generating reliable patterns.
