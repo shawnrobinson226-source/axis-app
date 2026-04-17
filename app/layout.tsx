@@ -3,8 +3,8 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VANTA",
-  description: "VANTA — deterministic clarity and execution OS",
+  title: "AXIS",
+  description: "AXIS — Continuity Engine",
 };
 
 const nav = [
@@ -61,7 +61,7 @@ export default function RootLayout({
                 letterSpacing: 0.4,
               }}
             >
-              VANTA
+              AXIS
             </Link>
 
             <nav

@@ -186,7 +186,7 @@ export default function SessionPage() {
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10">
-      <h1 className="text-2xl text-white">Continuity Engine Session</h1>
+      <h1 className="text-2xl text-white">AXIS / Session</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 

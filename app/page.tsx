@@ -82,10 +82,10 @@ export default async function HomePage() {
     <main className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10">
       <header className="space-y-4">
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
-          Continuity Engine / Entry
+          AXIS / Continuity Engine
         </p>
         <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-zinc-50">
-          Continuity Engine
+          AXIS
         </h1>
         <p className="max-w-3xl text-base leading-7 text-zinc-300">
           Turn confusion into clear next actions.
