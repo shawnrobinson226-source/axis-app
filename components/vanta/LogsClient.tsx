@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useTransition } from "react";
 import {
-  resetSessions,
   type DistortionClass,
   type SessionOutcome,
   type SessionLogRow,
@@ -148,7 +147,18 @@ export default function LogsClient({
           throw new Error("Operator identity is required.");
         }
 
-        await resetSessions(operatorId);
+        const response = await fetch("/api/v1/reset", {
+          method: "POST",
+          headers: {
+            "x-operator-id": operatorId,
+          },
+        });
+
+        const body = (await response.json()) as { ok?: boolean; error?: string };
+        if (!response.ok || !body.ok) {
+          throw new Error(body.error ?? "Reset failed.");
+        }
+
         await load(limit);
         setMsg("All sessions were cleared.");
       } catch (e) {

@@ -39,12 +39,15 @@ export async function POST(req: Request) {
     const body = (await req.json()) as Record<string, unknown>;
 
     const toText = (value: unknown) => (typeof value === "string" ? value : "");
-    const toNumber = (value: unknown, fallback: number) =>
-      typeof value === "number"
-        ? value
-        : typeof value === "string" && value.trim()
-          ? Number(value)
-          : fallback;
+    const toFiniteNumber = (value: unknown, fallback: number) => {
+      const numeric =
+        typeof value === "number"
+          ? value
+          : typeof value === "string" && value.trim()
+            ? Number(value)
+            : fallback;
+      return Number.isFinite(numeric) ? numeric : Number.NaN;
+    };
 
     const trigger = toText(body.trigger).trim();
     const distortion_class = toText(body.distortion_class).trim();
@@ -53,6 +56,20 @@ export async function POST(req: Request) {
     if (!trigger) return apiError("Trigger is required.", 400);
     if (!distortion_class) return apiError("Distortion class is required.", 400);
     if (!next_action) return apiError("Next action is required.", 400);
+
+    const clarityRating = toFiniteNumber(body.clarity_rating, 5);
+    const stability = toFiniteNumber(body.stability, 5);
+    const impact = toFiniteNumber(body.impact, 3);
+
+    if (!Number.isFinite(clarityRating)) {
+      return apiError("Invalid clarity_rating", 400);
+    }
+    if (!Number.isFinite(stability)) {
+      return apiError("Invalid stability", 400);
+    }
+    if (!Number.isFinite(impact)) {
+      return apiError("Invalid impact", 400);
+    }
 
     const result = await processSession({
       operator_id: operatorId,
@@ -64,14 +81,14 @@ export async function POST(req: Request) {
       behavior: toText(body.behavior) || "unspecified",
       protocol: toText(body.protocol) || "aligned_action",
       next_action,
-      clarity_rating: toNumber(body.clarity_rating, 5),
+      clarity_rating: clarityRating,
       outcome: toText(body.outcome) || "reduced",
-      stability: toNumber(body.stability, 5),
+      stability,
       reference:
         typeof body.reference === "boolean"
           ? body.reference
           : toText(body.reference) === "yes",
-      impact: toNumber(body.impact, 3),
+      impact,
     });
 
     return apiOk(result);

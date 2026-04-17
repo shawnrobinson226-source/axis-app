@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { resetSessions } from "@/app/session/actions";
 import { getOrCreateOperatorId } from "@/lib/operator/client";
 
 export default function ResetButton() {
@@ -20,7 +19,22 @@ export default function ResetButton() {
 
     startTransition(async () => {
       try {
-        await resetSessions(operatorId);
+        if (!operatorId) {
+          throw new Error("Operator identity is required.");
+        }
+
+        const response = await fetch("/api/v1/reset", {
+          method: "POST",
+          headers: {
+            "x-operator-id": operatorId,
+          },
+        });
+
+        const body = (await response.json()) as { ok?: boolean; error?: string };
+        if (!response.ok || !body.ok) {
+          throw new Error(body.error ?? "Reset failed.");
+        }
+
         window.location.reload();
       } catch (error) {
         console.error("Reset failed:", error);

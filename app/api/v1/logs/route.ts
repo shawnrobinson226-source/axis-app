@@ -17,7 +17,18 @@ export async function GET(req: Request) {
       return apiError("Missing operator identity", 401);
     }
 
-    const logs = await withTimeout(getRecentSessions(operatorId, 200), 2000);
+    const url = new URL(req.url);
+    const rawLimit = url.searchParams.get("limit");
+    const parsedLimit =
+      rawLimit && rawLimit.trim() ? Number.parseInt(rawLimit, 10) : 50;
+
+    if (!Number.isFinite(parsedLimit)) {
+      return apiError("Invalid limit", 400);
+    }
+
+    const limit = Math.max(1, Math.min(200, parsedLimit));
+
+    const logs = await withTimeout(getRecentSessions(operatorId, limit), 2000);
     return apiOk({ logs });
   } catch (err) {
     return apiError(err instanceof Error ? err.message : "Unknown error");

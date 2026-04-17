@@ -1,27 +1,21 @@
-// app/api/ai/route.ts
-import { NextResponse } from "next/server";
-
-export const runtime = "nodejs"; // safe default for Vercel
+import { apiError } from "@/lib/api/responses";
 
 export async function GET() {
-  return NextResponse.json({
-    ok: true,
-    service: "vanta-ai-route",
-    message: "AI route online (stub).",
-  });
+  return apiError("Disabled endpoint", 404);
 }
 
-export async function POST(request: Request) {
-  let body: unknown = null;
-  try {
-    body = await request.json();
-  } catch {
-    body = null;
-  }
+export async function POST() {
+  return apiError("Disabled endpoint", 404);
+}
 
-  return NextResponse.json({
-    ok: true,
-    service: "vanta-ai-route",
-    received: body,
-  });
+export async function PUT() {
+  return apiError("Disabled endpoint", 404);
+}
+
+export async function PATCH() {
+  return apiError("Disabled endpoint", 404);
+}
+
+export async function DELETE() {
+  return apiError("Disabled endpoint", 404);
 }

@@ -44,6 +44,10 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+function finiteOrFallback(value: number | undefined, fallback: number) {
+  return Number.isFinite(value) ? (value as number) : fallback;
+}
+
 function readNumber(row: Record<string, unknown>, key: string, fallback = 0) {
   return Number(row[key] ?? fallback);
 }
@@ -249,11 +253,11 @@ export async function processSession(input: ProcessSessionInput) {
   const emotion = input.emotion?.trim() || "unspecified";
   const behavior = input.behavior?.trim() || "unspecified";
   const protocol = input.protocol?.trim() || "aligned_action";
-  const clarity_rating = clamp(input.clarity_rating ?? 5, 0, 10);
+  const clarity_rating = clamp(finiteOrFallback(input.clarity_rating, 5), 0, 10);
   const outcome = parseOutcome((input.outcome ?? "reduced").trim());
-  const stability = clamp(input.stability ?? 5, 0, 10);
+  const stability = clamp(finiteOrFallback(input.stability, 5), 0, 10);
   const reference = Boolean(input.reference);
-  const impact = clamp(input.impact ?? 3, 0, 10);
+  const impact = clamp(finiteOrFallback(input.impact, 3), 0, 10);
 
   if (!operator_id) throw new Error("Operator identity is required.");
   if (!trigger) throw new Error("Trigger is required.");

@@ -10,7 +10,7 @@ function randomId() {
 
 export function getOrCreateOperatorId(): string {
   if (typeof window === "undefined") {
-    return "op_server_fallback";
+    return "";
   }
 
   const existing = window.localStorage.getItem(STORAGE_KEY);
