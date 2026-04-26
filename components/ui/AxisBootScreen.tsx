@@ -7,9 +7,9 @@ type AxisBootScreenProps = {
   onFinish?: () => void;
 };
 
-const FADE_IN_MS = 550;
-const HOLD_MS = 900;
-const FADE_OUT_MS = 500;
+const FADE_IN_MS = 700;
+const HOLD_MS = 1600;
+const FADE_OUT_MS = 700;
 
 export default function AxisBootScreen({ onFinish }: AxisBootScreenProps) {
   const [phase, setPhase] = useState<"enter" | "hold" | "exit">("enter");
@@ -59,10 +59,10 @@ export default function AxisBootScreen({ onFinish }: AxisBootScreenProps) {
         <Image
           src="/axis-logo.png"
           alt="AXIS"
-          width={240}
-          height={240}
+          width={900}
+          height={900}
           priority
-          className="h-auto w-[152px] animate-pulse [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.08))] sm:w-[192px]"
+          className="h-auto w-[70vw] max-w-[720px]"
         />
       </div>
     </div>
