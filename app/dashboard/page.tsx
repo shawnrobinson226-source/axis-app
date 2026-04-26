@@ -242,7 +242,7 @@ export default function DashboardPage() {
             <p className="mt-3 text-sm text-zinc-400">Baseline. Updates after first session.</p>
           ) : null}
           <p className="mt-3 text-sm text-zinc-300">
-            Updated {formatDate(continuity.updated_at)}
+            Last continuity update: {formatDate(continuity.updated_at)}
           </p>
         </div>
 
