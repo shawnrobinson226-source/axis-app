@@ -129,27 +129,26 @@ export default function SessionPage() {
   const redirectSteps = renderRedirectSteps(preview?.redirect);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  event.preventDefault();
 
-    if (!operatorId) {
-      setSaveError("Operator identity is required.");
-      setShowSavedConfirmation(false);
-      return;
-    }
+  if (!operatorId) {
+    setSaveError("Operator identity is required.");
+    setShowSavedConfirmation(false);
+    return;
+  }
 
-    const form = event.currentTarget;
-    const formData = new FormData(form);
+  const form = event.currentTarget;
+  const formData = new FormData(form);
 
-    const payload = {
-      trigger: String(formData.get("trigger") ?? ""),
-      distortion_class: String(formData.get("distortion_class") ?? ""),
-      next_action: String(formData.get("next_action") ?? ""),
-      outcome: String(formData.get("outcome") ?? ""),
-      clarity_rating: Number(formData.get("clarity_0_10") ?? 5),
-      stability: Number(formData.get("stability") ?? 5),
-      reference: String(formData.get("reference") ?? "") === "yes",
-      impact: Number(formData.get("impact") ?? 3),
-    };
+  const payload = {
+    trigger: String(formData.get("trigger") ?? ""),
+    classification: String(formData.get("distortion_class") ?? ""),
+    next_action: String(formData.get("next_action") ?? ""),
+    outcome: String(formData.get("outcome") ?? ""),
+    stability: Number(formData.get("stability") ?? 5),
+    reference: String(formData.get("reference") ?? "") === "yes",
+    impact: Number(formData.get("impact") ?? 3),
+  };
 
     setIsSaving(true);
     setSaveError("");
