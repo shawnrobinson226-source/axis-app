@@ -12,7 +12,7 @@ export default function ResetButton() {
 
   function handleReset() {
     const confirmed = window.confirm(
-      "Delete all session history? This cannot be undone.",
+      "This deletes all session data. This cannot be undone.",
     );
 
     if (!confirmed) return;

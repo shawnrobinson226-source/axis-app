@@ -1,6 +1,8 @@
 // /app/settings/page.tsx
 export const runtime = "nodejs";
 
+import packageJson from "../../package.json";
+import OperatorIdentity from "./operator-identity";
 import ResetButton from "./reset-button";
 
 function Card({
@@ -32,12 +34,25 @@ export default function SettingsPage() {
       <h1 style={{ marginBottom: 8 }}>Settings</h1>
 
       <p style={{ marginTop: 0, opacity: 0.8 }}>
-        Starter Pack controls and system utilities.
+        Operator identity and system utilities.
       </p>
+
+      <Card title="Operator Identity">
+        <div style={{ opacity: 0.9, lineHeight: 1.5 }}>
+          Read-only identity used for session records.
+        </div>
+        <OperatorIdentity />
+      </Card>
+
+      <Card title="System Version">
+        <div style={{ opacity: 0.9, lineHeight: 1.5 }}>
+          {packageJson.version}
+        </div>
+      </Card>
 
       <Card title="Reset Logs">
         <div style={{ opacity: 0.9, lineHeight: 1.5 }}>
-          This deletes all stored session entries.
+          This deletes all session data.
         </div>
 
         <div style={{ marginTop: 8, fontSize: 13, opacity: 0.7 }}>
@@ -52,14 +67,14 @@ export default function SettingsPage() {
 
       <Card title="System Notes">
         <ul style={{ margin: 0, paddingLeft: 18, opacity: 0.9, lineHeight: 1.5 }}>
-          <li>Deterministic engine.</li>
-          <li>No predictive behavior.</li>
-          <li>No external integrations.</li>
+          <li>AXIS structures decisions into execution records.</li>
+          <li>No prediction.</li>
+          <li>No hidden automation.</li>
           <li>You remain the decision authority.</li>
         </ul>
 
         <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
-          V1 focuses on clarity, repeatability, and structural stability.
+          The system structures. The operator decides.
         </div>
       </Card>
     </main>

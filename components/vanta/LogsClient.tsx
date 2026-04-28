@@ -61,11 +61,6 @@ function formatOutcome(value: SessionOutcome) {
   }
 }
 
-function deltaText(before: number, after: number) {
-  const delta = after - before;
-  return delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1);
-}
-
 type LogsClientProps = {
   initialRows: SessionLogRow[];
   initialLimit?: number;
@@ -251,9 +246,14 @@ export default function LogsClient({
       >
         {rows.length === 0 ? (
           <div style={{ padding: 20 }}>
-            <div style={{ fontWeight: 700 }}>No sessions recorded yet.</div>
+            <div style={{ fontWeight: 700 }}>No sessions logged yet.</div>
             <div style={{ marginTop: 8, opacity: 0.78 }}>
-              Start a session when distortion appears.
+              Each session records the trigger, classification, next action, and outcome.
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <a href="/session" style={buttonStyle(true)}>
+                Start Session →
+              </a>
             </div>
           </div>
         ) : (
@@ -262,7 +262,7 @@ export default function LogsClient({
               style={{
                 width: "100%",
                 borderCollapse: "collapse",
-                minWidth: 1200,
+                minWidth: 760,
               }}
             >
               <thead>
@@ -277,19 +277,7 @@ export default function LogsClient({
                       width: 190,
                     }}
                   >
-                    Time
-                  </th>
-                  <th
-                    style={{
-                      textAlign: "left",
-                      padding: "16px 18px",
-                      borderBottom: "1px solid rgba(255,255,255,0.1)",
-                      fontSize: 13,
-                      opacity: 0.8,
-                      width: 340,
-                    }}
-                  >
-                    Trigger
+                    Date
                   </th>
                   <th
                     style={{
@@ -301,7 +289,7 @@ export default function LogsClient({
                       width: 140,
                     }}
                   >
-                    Distortion
+                    Classification
                   </th>
                   <th
                     style={{
@@ -311,18 +299,6 @@ export default function LogsClient({
                       fontSize: 13,
                       opacity: 0.8,
                       width: 180,
-                    }}
-                  >
-                    Protocol
-                  </th>
-                  <th
-                    style={{
-                      textAlign: "left",
-                      padding: "16px 18px",
-                      borderBottom: "1px solid rgba(255,255,255,0.1)",
-                      fontSize: 13,
-                      opacity: 0.8,
-                      width: 120,
                     }}
                   >
                     Outcome
@@ -337,31 +313,19 @@ export default function LogsClient({
                       width: 100,
                     }}
                   >
-                    Clarity
-                  </th>
-                  <th
-                    style={{
-                      textAlign: "left",
-                      padding: "16px 18px",
-                      borderBottom: "1px solid rgba(255,255,255,0.1)",
-                      fontSize: 13,
-                      opacity: 0.8,
-                      width: 120,
-                    }}
-                  >
-                    Continuity Δ
-                  </th>
-                  <th
-                    style={{
-                      textAlign: "left",
-                      padding: "16px 18px",
-                      borderBottom: "1px solid rgba(255,255,255,0.1)",
-                      fontSize: 13,
-                      opacity: 0.8,
-                      width: 260,
-                    }}
-                  >
                     Next Action
+                  </th>
+                  <th
+                    style={{
+                      textAlign: "left",
+                      padding: "16px 18px",
+                      borderBottom: "1px solid rgba(255,255,255,0.1)",
+                      fontSize: 13,
+                      opacity: 0.8,
+                      width: 320,
+                    }}
+                  >
+                    Trigger
                   </th>
                 </tr>
               </thead>
@@ -387,32 +351,11 @@ export default function LogsClient({
                         verticalAlign: "top",
                         padding: "16px 18px",
                         borderBottom: "1px solid rgba(255,255,255,0.06)",
-                        lineHeight: 1.55,
+                        fontWeight: 700,
+                        lineHeight: 1.4,
                       }}
                     >
-                      {row.trigger}
-                    </td>
-
-                    <td
-                      style={{
-                        verticalAlign: "top",
-                        padding: "16px 18px",
-                        borderBottom: "1px solid rgba(255,255,255,0.06)",
-                      }}
-                    >
-                      <div style={{ fontWeight: 700, lineHeight: 1.4 }}>
-                        {formatClass(row.distortion_class)}
-                      </div>
-                    </td>
-
-                    <td
-                      style={{
-                        verticalAlign: "top",
-                        padding: "16px 18px",
-                        borderBottom: "1px solid rgba(255,255,255,0.06)",
-                      }}
-                    >
-                      {row.protocol}
+                      {formatClass(row.distortion_class)}
                     </td>
 
                     <td
@@ -432,28 +375,17 @@ export default function LogsClient({
                         borderBottom: "1px solid rgba(255,255,255,0.06)",
                       }}
                     >
-                      {row.clarity_rating}
-                    </td>
-
-                    <td
-                      style={{
-                        verticalAlign: "top",
-                        padding: "16px 18px",
-                        borderBottom: "1px solid rgba(255,255,255,0.06)",
-                      }}
-                    >
-                      {deltaText(row.continuity_before, row.continuity_after)}
-                    </td>
-
-                    <td
-                      style={{
-                        verticalAlign: "top",
-                        padding: "16px 18px",
-                        borderBottom: "1px solid rgba(255,255,255,0.06)",
-                        lineHeight: 1.5,
-                      }}
-                    >
                       {row.next_action}
+                    </td>
+
+                    <td
+                      style={{
+                        verticalAlign: "top",
+                        padding: "16px 18px",
+                        borderBottom: "1px solid rgba(255,255,255,0.06)",
+                      }}
+                    >
+                      {row.trigger}
                     </td>
                   </tr>
                 ))}

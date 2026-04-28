@@ -104,6 +104,49 @@ export default function DashboardPage() {
 
   const { continuity, activeFracturesCount, recentSessions } = state;
 
+  if (recentSessions.length === 0) {
+    return (
+      <main className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10">
+        <header className="space-y-3">
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
+            AXIS / Dashboard
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
+            Execution Patterns
+          </h1>
+          <p className="max-w-3xl text-sm leading-6 text-zinc-400">
+            Patterns appear after you log sessions.
+          </p>
+        </header>
+
+        <section className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
+          <h2 className="text-lg font-medium text-zinc-100">
+            What Will Appear
+          </h2>
+          <ul className="mt-4 grid gap-3 text-sm text-zinc-300 md:grid-cols-2">
+            <li>Recurring distortion types</li>
+            <li>Outcome trends</li>
+            <li>Continuity movement</li>
+            <li>Execution patterns</li>
+          </ul>
+        </section>
+
+        <section className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
+          <p className="text-sm text-zinc-200">Recommended Next Step</p>
+          <p className="mt-3 text-sm leading-6 text-zinc-100">
+            Start a session and log one real situation.
+          </p>
+          <a
+            href="/session"
+            className="mt-4 inline-flex rounded-xl border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-100 transition hover:border-zinc-500"
+          >
+            Go to Session
+          </a>
+        </section>
+      </main>
+    );
+  }
+
   const dimensions = [
     {
       label: "Perception",

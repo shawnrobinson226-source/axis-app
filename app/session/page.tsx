@@ -28,34 +28,6 @@ type HelperDefinition = {
   helper: string;
 };
 
-const DISTORTION_HELPERS: HelperDefinition[] = [
-  {
-    value: "narrative",
-    label: "Narrative",
-    helper: "Story-level interpretation that may overfit to threat or failure.",
-  },
-  {
-    value: "emotional",
-    label: "Emotional",
-    helper: "A felt state that is being treated as objective proof.",
-  },
-  {
-    value: "behavioral",
-    label: "Behavioral",
-    helper: "An action pattern that reinforces the loop instead of resolving it.",
-  },
-  {
-    value: "perceptual",
-    label: "Perceptual",
-    helper: "Attention narrowing that misses context, options, or signal quality.",
-  },
-  {
-    value: "continuity",
-    label: "Continuity",
-    helper: "Break in identity-consistent follow-through across time.",
-  },
-];
-
 const OUTCOME_HELPERS: HelperDefinition[] = [
   {
     value: "reduced",
@@ -104,6 +76,35 @@ function renderRedirectSteps(redirect: unknown): string[] {
   return [];
 }
 
+function classifyFromAnalysis(preview: Preview | null) {
+  const fractureId =
+    preview?.fracture && typeof preview.fracture === "object"
+      ? preview.fracture.id
+      : "";
+
+  switch (fractureId) {
+    case "avoidance_loop":
+    case "boundary_violation":
+    case "over_responsibility":
+      return "behavioral";
+    case "rejection_sensitivity":
+    case "shame_spike":
+      return "emotional";
+    case "comparison_spiral":
+    case "self_worth_dependency":
+    case "status_threat":
+      return "narrative";
+    case "control_loss":
+    case "uncertainty_intolerance":
+    default:
+      return "perceptual";
+  }
+}
+
+function formatClassification(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 export default function SessionPage() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -120,13 +121,15 @@ export default function SessionPage() {
   function handleAnalyze(trigger: string) {
     if (!trigger.trim()) return;
 
+    const analysis = analyzeTrigger(trigger);
     startTransition(() => {
-      const analysis = analyzeTrigger(trigger);
       setPreview(analysis);
     });
+    return analysis;
   }
 
   const redirectSteps = renderRedirectSteps(preview?.redirect);
+  const classification = classifyFromAnalysis(preview);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
   event.preventDefault();
@@ -139,10 +142,13 @@ export default function SessionPage() {
 
   const form = event.currentTarget;
   const formData = new FormData(form);
+  const trigger = String(formData.get("trigger") ?? "");
+  const analysis = preview ?? handleAnalyze(trigger) ?? analyzeTrigger(trigger);
+  const classificationForSave = classifyFromAnalysis(analysis);
 
   const payload = {
-    trigger: String(formData.get("trigger") ?? ""),
-    classification: String(formData.get("distortion_class") ?? ""),
+    trigger,
+    classification: classificationForSave,
     next_action: String(formData.get("next_action") ?? ""),
     outcome: String(formData.get("outcome") ?? ""),
     stability: Number(formData.get("stability") ?? 5),
@@ -186,11 +192,12 @@ export default function SessionPage() {
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10">
       <h1 className="text-2xl text-white">AXIS / Session</h1>
+      <p className="text-sm text-zinc-300">The system structures. You decide.</p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
         <div className="space-y-1">
-          <p className="text-sm font-medium text-zinc-100">Quick Check</p>
+          <p className="text-sm font-medium text-zinc-100">1. Pre-Flight</p>
           <p className="text-sm text-zinc-300">
             Answer these checks before entering the session.
           </p>
@@ -200,7 +207,7 @@ export default function SessionPage() {
 
         <div className="space-y-2">
           <label className="text-zinc-200 text-sm" htmlFor="trigger">
-            What is happening right now?
+            2. Describe Situation
           </label>
 
           <textarea
@@ -228,7 +235,12 @@ export default function SessionPage() {
         {preview && (
           <div className="space-y-4 rounded-md border border-zinc-700 bg-zinc-800 p-4 text-zinc-100">
             <div>
-              <div className="text-sm text-zinc-400">Fracture</div>
+              <div className="text-sm text-zinc-400">3. System Classification</div>
+              <div className="font-medium">{formatClassification(classification)}</div>
+            </div>
+
+            <div>
+              <div className="text-sm text-zinc-400">Detected Structure</div>
               <div className="font-medium">
                 {renderPreviewValue(preview.fracture)}
               </div>
@@ -255,42 +267,8 @@ export default function SessionPage() {
         )}
 
         <div className="space-y-2">
-          <label
-            className="text-sm font-medium text-zinc-100"
-            htmlFor="distortion_class"
-          >
-            Select primary distortion
-          </label>
-          <select
-            id="distortion_class"
-            name="distortion_class"
-            required
-            className="w-full rounded-md border border-zinc-500 bg-zinc-800 p-3 text-zinc-50"
-          >
-            <option value="">Select primary distortion</option>
-            {DISTORTION_HELPERS.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-          <p className="text-sm text-zinc-300">
-            Choose the primary pattern driving this situation. This determines
-            the response path used for the session.
-          </p>
-          <div className="space-y-1 rounded-md border border-zinc-700 bg-zinc-900 p-3 text-xs text-zinc-300">
-            <p className="text-zinc-200">Distortion helper definitions:</p>
-            {DISTORTION_HELPERS.map((item) => (
-              <p key={item.value}>
-                <span className="font-medium">{item.label}:</span> {item.helper}
-              </p>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
           <label className="text-sm font-medium text-zinc-100" htmlFor="next_action">
-            Execution Step
+            4. Next Action
           </label>
           <textarea
             id="next_action"
@@ -306,7 +284,7 @@ export default function SessionPage() {
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-zinc-100" htmlFor="outcome">
-            Expected outcome
+            Outcome
           </label>
           <select
             id="outcome"
@@ -331,58 +309,12 @@ export default function SessionPage() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label
-            className="text-sm font-medium text-zinc-100"
-            htmlFor="clarity_0_10"
-          >
-            Continuity Score (0–10)
-          </label>
-          <input
-            id="clarity_0_10"
-            type="number"
-            name="clarity_0_10"
-            min="0"
-            max="10"
-            required
-            placeholder="Continuity score (0-10)"
-            className="w-full rounded-md border border-zinc-500 bg-zinc-800 p-3 text-zinc-50"
-          />
-          <p className="text-sm text-zinc-300">
-            Rate current continuity for this situation on a 0 to 10 scale. 0 =
-            fully broken, 10 = fully aligned.
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <label
-            className="text-sm font-medium text-zinc-100"
-            htmlFor="steps_completed"
-          >
-            Steps Completed
-          </label>
-          <input
-            id="steps_completed"
-            type="number"
-            name="steps_completed"
-            min="0"
-            max="9"
-            required
-            placeholder="Steps completed (0-9)"
-            className="w-full rounded-md border border-zinc-500 bg-zinc-800 p-3 text-zinc-50"
-          />
-          <p className="text-sm text-zinc-300">
-            Enter how many execution steps were completed in this session so
-            far.
-          </p>
-        </div>
-
         <button
           type="submit"
           disabled={isPending || isSaving}
           className="rounded-md bg-zinc-100 px-4 py-2 text-zinc-900 disabled:opacity-60"
         >
-          {isSaving ? "Saving..." : "Save"}
+          {isSaving ? "Saving..." : "5. Save"}
         </button>
 
         {showSavedConfirmation && (
