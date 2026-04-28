@@ -39,7 +39,7 @@ export default function SettingsPage() {
 
       <Card title="Operator Identity">
         <div style={{ opacity: 0.9, lineHeight: 1.5 }}>
-          Read-only identity used for session records.
+          Permanent identity and editable display label.
         </div>
         <OperatorIdentity />
       </Card>
