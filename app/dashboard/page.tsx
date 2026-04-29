@@ -48,6 +48,30 @@ type DashboardState = {
   }>;
 };
 
+type ThirtyDaySummary = {
+  total_sessions: number;
+  distortion_frequency: {
+    narrative: number;
+    emotional: number;
+    behavioral: number;
+    perceptual: number;
+    continuity: number;
+  };
+  outcome_distribution: {
+    reduced: number;
+    unresolved: number;
+    escalated: number;
+  };
+  most_common_distortion: string | null;
+  continuity_change: {
+    start: number | null;
+    end: number | null;
+    delta: number | null;
+  };
+  most_repeated_pattern: string | null;
+  most_common_action: string | null;
+};
+
 const EMPTY_STATE: DashboardState = {
   continuity: {
     operator_id: "",
@@ -62,6 +86,114 @@ const EMPTY_STATE: DashboardState = {
   recentSessions: [],
 };
 
+const EMPTY_SUMMARY: ThirtyDaySummary = {
+  total_sessions: 0,
+  distortion_frequency: {
+    narrative: 0,
+    emotional: 0,
+    behavioral: 0,
+    perceptual: 0,
+    continuity: 0,
+  },
+  outcome_distribution: {
+    reduced: 0,
+    unresolved: 0,
+    escalated: 0,
+  },
+  most_common_distortion: null,
+  continuity_change: {
+    start: null,
+    end: null,
+    delta: null,
+  },
+  most_repeated_pattern: null,
+  most_common_action: null,
+};
+
+function formatOptional(value: string | null) {
+  return value ?? "None";
+}
+
+function formatNumber(value: number | null) {
+  return value === null ? "None" : value.toFixed(1);
+}
+
+function formatDelta(value: number | null) {
+  if (value === null) return "None";
+  return value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
+}
+
+function SummarySection({ summary }: { summary: ThirtyDaySummary }) {
+  return (
+    <section className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
+      <div className="mb-5">
+        <h2 className="text-lg font-medium text-zinc-100">
+          30-Day Execution Summary
+        </h2>
+        <p className="mt-1 text-sm text-zinc-400">
+          Operational memory from sessions logged in the last 30 days.
+        </p>
+      </div>
+
+      {summary.total_sessions === 0 ? (
+        <div className="rounded-xl border border-dashed border-zinc-800 px-4 py-8 text-sm text-zinc-500">
+          No activity in the last 30 days.
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+            <p className="text-sm text-zinc-400">Total Sessions</p>
+            <p className="mt-2 text-3xl font-semibold text-zinc-100">
+              {summary.total_sessions}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+            <p className="text-sm text-zinc-400">Most Common Distortion</p>
+            <p className="mt-2 text-xl font-semibold capitalize text-zinc-100">
+              {formatOptional(summary.most_common_distortion)}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+            <p className="text-sm text-zinc-400">Continuity Delta</p>
+            <p className="mt-2 text-xl font-semibold text-zinc-100">
+              {formatDelta(summary.continuity_change.delta)}
+            </p>
+            <p className="mt-2 text-xs text-zinc-500">
+              {formatNumber(summary.continuity_change.start)} →{" "}
+              {formatNumber(summary.continuity_change.end)}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+            <p className="text-sm text-zinc-400">Outcome Counts</p>
+            <div className="mt-2 space-y-1 text-sm text-zinc-100">
+              <p>reduced: {summary.outcome_distribution.reduced}</p>
+              <p>unresolved: {summary.outcome_distribution.unresolved}</p>
+              <p>escalated: {summary.outcome_distribution.escalated}</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+            <p className="text-sm text-zinc-400">Most Repeated Pattern</p>
+            <p className="mt-2 text-sm leading-6 text-zinc-100">
+              {formatOptional(summary.most_repeated_pattern)}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+            <p className="text-sm text-zinc-400">Most Common Action</p>
+            <p className="mt-2 text-sm leading-6 text-zinc-100">
+              {formatOptional(summary.most_common_action)}
+            </p>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function DashboardPage() {
   const [operatorId] = useState(() => {
     if (typeof window === "undefined") return "";
@@ -69,6 +201,7 @@ export default function DashboardPage() {
   });
   const [state, setState] = useState<DashboardState>(EMPTY_STATE);
   const [volatilityBand, setVolatilityBand] = useState<"low" | "medium" | "high">("low");
+  const [summary, setSummary] = useState<ThirtyDaySummary>(EMPTY_SUMMARY);
 
   useEffect(() => {
     if (!operatorId) return;
@@ -96,6 +229,23 @@ export default function DashboardPage() {
           recentSessions: body.data.recentSessions ?? [],
         });
         setVolatilityBand(body.data.volatilityBand ?? "low");
+
+        const summaryResponse = await fetch("/api/v1/summary/30-day", {
+          method: "GET",
+          headers: {
+            "x-operator-id": operatorId,
+          },
+          cache: "no-store",
+        });
+
+        const summaryBody = (await summaryResponse.json()) as {
+          ok?: boolean;
+          data?: ThirtyDaySummary;
+        };
+
+        if (summaryResponse.ok && summaryBody.ok && summaryBody.data) {
+          setSummary(summaryBody.data);
+        }
       } catch {
         // Keep neutral fallback state on load failure.
       }
@@ -143,6 +293,8 @@ export default function DashboardPage() {
             Go to Session
           </a>
         </section>
+
+        <SummarySection summary={summary} />
       </main>
     );
   }
@@ -270,6 +422,8 @@ export default function DashboardPage() {
           entries = more accurate insights.
         </p>
       </header>
+
+      <SummarySection summary={summary} />
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
