@@ -230,7 +230,7 @@ export default function DashboardPage() {
         });
         setVolatilityBand(body.data.volatilityBand ?? "low");
 
-        const summaryResponse = await fetch("/api/v1/summary/30-day", {
+        const summaryResponse = await fetch("/api/v1/summary/thirty-day", {
           method: "GET",
           headers: {
             "x-operator-id": operatorId,
