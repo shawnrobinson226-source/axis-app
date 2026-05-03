@@ -28,6 +28,14 @@ type HelperDefinition = {
   helper: string;
 };
 
+type SessionApiResponse = {
+  ok?: boolean;
+  error?: string;
+  data?: {
+    protocol_output?: string;
+  };
+};
+
 const OUTCOME_HELPERS: HelperDefinition[] = [
   {
     value: "reduced",
@@ -117,6 +125,7 @@ export default function SessionPage() {
       new URLSearchParams(window.location.search).get("saved") === "1",
   );
   const [saveError, setSaveError] = useState("");
+  const [protocolOutput, setProtocolOutput] = useState<string | null>(null);
 
   function handleAnalyze(trigger: string) {
     if (!trigger.trim()) return;
@@ -158,6 +167,7 @@ export default function SessionPage() {
 
     setIsSaving(true);
     setSaveError("");
+    setProtocolOutput(null);
     setShowSavedConfirmation(false);
 
     try {
@@ -170,15 +180,18 @@ export default function SessionPage() {
         body: JSON.stringify(payload),
       });
 
-      const body = (await response.json()) as {
-        ok?: boolean;
-        error?: string;
-      };
+      const body = (await response.json()) as SessionApiResponse;
 
       if (!response.ok || !body.ok) {
         throw new Error(body.error ?? "Failed to save session.");
       }
 
+      setProtocolOutput(
+        typeof body.data?.protocol_output === "string" &&
+          body.data.protocol_output.trim()
+          ? body.data.protocol_output
+          : "Protocol output unavailable.",
+      );
       setShowSavedConfirmation(true);
       form.reset();
       setPreview(null);
@@ -318,15 +331,26 @@ export default function SessionPage() {
         </button>
 
         {showSavedConfirmation && (
-          <p className="text-sm text-zinc-300">
-            Session logged.{" "}
-            <a
-              href="/dashboard"
-              className="text-zinc-100 underline decoration-zinc-500 underline-offset-2 transition hover:decoration-zinc-300"
-            >
-              View in Dashboard →
-            </a>
-          </p>
+          <div className="space-y-4 rounded-md border border-zinc-700 bg-zinc-900 p-4">
+            <p className="text-sm text-zinc-300">
+              Session logged.{" "}
+              <a
+                href="/dashboard"
+                className="text-zinc-100 underline decoration-zinc-500 underline-offset-2 transition hover:decoration-zinc-300"
+              >
+                View in Dashboard →
+              </a>
+            </p>
+
+            <div>
+              <div className="text-sm font-medium text-zinc-100">
+                Protocol Output
+              </div>
+              <pre className="mt-3 whitespace-pre-wrap rounded-md border border-zinc-800 bg-black p-4 text-sm leading-6 text-zinc-100">
+                {protocolOutput ?? "Protocol output unavailable."}
+              </pre>
+            </div>
+          </div>
         )}
 
         {saveError ? <p className="text-sm text-red-300">{saveError}</p> : null}
