@@ -412,10 +412,10 @@ export default function DashboardPage() {
           AXIS / Dashboard
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
-          Runtime Status Report
+          Execution Patterns
         </h1>
         <p className="max-w-3xl text-sm leading-6 text-zinc-400">
-          Read-only system view of your continuity, alignment, and recent outcomes.
+          Pattern view of your logged sessions, outcomes, and continuity movement.
         </p>
         <p className="max-w-3xl text-sm leading-6 text-zinc-300">
           This dashboard reflects patterns from your logged sessions. More
@@ -641,3 +641,4 @@ export default function DashboardPage() {
     </main>
   );
 }
+
