@@ -36,7 +36,7 @@ type SessionApiResponse = {
   };
 };
 
-const BELL_CONFIRMATION_TEXT = "I choose not to do this.";
+const BELL_CONFIRMATION_TEXT = "I decline execution.";
 
 const OUTCOME_HELPERS: HelperDefinition[] = [
   {
@@ -213,7 +213,13 @@ export default function SessionPage() {
   }
 
   function confirmBellCheckpoint() {
-    if (bellInput !== BELL_CONFIRMATION_TEXT) return;
+    if (
+      bellInput.trim().toLowerCase() !==
+      BELL_CONFIRMATION_TEXT.toLowerCase()
+    ) {
+      return;
+    }
+
     setActionResolution("not_executed");
     setShowBellCheckpoint(false);
     setBellInput("");
@@ -395,7 +401,7 @@ export default function SessionPage() {
                 <p className="text-sm text-zinc-400">
                   {actionResolution === "executed"
                     ? "Executed."
-                    : "Bell checkpoint recorded."}
+                    : "Execution declined. Pattern remains active."}
                 </p>
               ) : null}
             </div>
@@ -408,7 +414,7 @@ export default function SessionPage() {
               <div className="space-y-3">
                 <h2 className="text-xl font-semibold">Ring the Bell</h2>
                 <div className="space-y-3 text-sm leading-6 text-zinc-300">
-                  <p>You are choosing not to execute the action.</p>
+                  <p>Execution declined. Pattern remains active.</p>
                   <p>To continue, type exactly:</p>
                   <p className="font-medium text-zinc-100">
                     {BELL_CONFIRMATION_TEXT}
