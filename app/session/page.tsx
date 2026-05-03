@@ -22,11 +22,12 @@ type Preview = {
   redirect?: unknown;
 };
 
-type HelperDefinition = {
-  value: string;
-  label: string;
-  helper: string;
-};
+type DistortionClass =
+  | "narrative"
+  | "emotional"
+  | "behavioral"
+  | "perceptual"
+  | "continuity";
 
 type SessionApiResponse = {
   ok?: boolean;
@@ -37,24 +38,6 @@ type SessionApiResponse = {
 };
 
 const BELL_CONFIRMATION_TEXT = "I decline execution.";
-
-const OUTCOME_HELPERS: HelperDefinition[] = [
-  {
-    value: "reduced",
-    label: "Reduced",
-    helper: "Loop intensity dropped and the system regained traction.",
-  },
-  {
-    value: "unresolved",
-    label: "Unresolved",
-    helper: "No meaningful change yet; loop remains active.",
-  },
-  {
-    value: "escalated",
-    label: "Escalated",
-    helper: "Loop intensified or spread into additional failure patterns.",
-  },
-];
 
 function renderPreviewValue(value: PreviewValue) {
   if (typeof value === "string") return value;
@@ -86,7 +69,7 @@ function renderRedirectSteps(redirect: unknown): string[] {
   return [];
 }
 
-function classifyFromAnalysis(preview: Preview | null) {
+function classifyFromAnalysis(preview: Preview | null): DistortionClass {
   const fractureId =
     preview?.fracture && typeof preview.fracture === "object"
       ? preview.fracture.id
@@ -115,6 +98,28 @@ function formatClassification(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+const AXIS_ACTION_FALLBACKS: Record<DistortionClass, string> = {
+  narrative:
+    "Write the claim in one sentence. Then write one observable fact that supports or weakens it.",
+  emotional:
+    "Pause for 60 seconds. Name the emotion once. Do not act until the timer ends.",
+  behavioral:
+    "Start the smallest physical step now and continue for two minutes without evaluating.",
+  perceptual: "Write three facts and three assumptions. Act only on the facts.",
+  continuity:
+    "Name the objective, identify the deviation, and execute the next aligned step within five minutes.",
+};
+
+function fallbackActionFor(distortion: DistortionClass) {
+  return AXIS_ACTION_FALLBACKS[distortion];
+}
+
+function getAxisAction(preview: Preview | null) {
+  const distortion = classifyFromAnalysis(preview);
+  const steps = renderRedirectSteps(preview?.redirect);
+  return steps[0] || fallbackActionFor(distortion);
+}
+
 export default function SessionPage() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -141,36 +146,42 @@ export default function SessionPage() {
     startTransition(() => {
       setPreview(analysis);
     });
+    setActionResolution(null);
+    setShowBellCheckpoint(false);
+    setBellInput("");
     return analysis;
   }
 
-  const redirectSteps = renderRedirectSteps(preview?.redirect);
   const classification = classifyFromAnalysis(preview);
+  const axisAction = preview ? getAxisAction(preview) : "";
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-  event.preventDefault();
+    event.preventDefault();
 
-  if (!operatorId) {
-    setSaveError("Operator identity is required.");
-    setShowSavedConfirmation(false);
-    return;
-  }
+    if (!operatorId) {
+      setSaveError("Operator identity is required.");
+      setShowSavedConfirmation(false);
+      return;
+    }
 
-  const form = event.currentTarget;
-  const formData = new FormData(form);
-  const trigger = String(formData.get("trigger") ?? "");
-  const analysis = preview ?? handleAnalyze(trigger) ?? analyzeTrigger(trigger);
-  const classificationForSave = classifyFromAnalysis(analysis);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const trigger = String(formData.get("trigger") ?? "");
+    const analysis = preview ?? handleAnalyze(trigger) ?? analyzeTrigger(trigger);
+    const classificationForSave = classifyFromAnalysis(analysis);
+    const actionForSave = getAxisAction(analysis);
+    const outcomeForSave =
+      actionResolution === "executed" ? "reduced" : "unresolved";
 
-  const payload = {
-    trigger,
-    classification: classificationForSave,
-    next_action: String(formData.get("next_action") ?? ""),
-    outcome: String(formData.get("outcome") ?? ""),
-    stability: Number(formData.get("stability") ?? 5),
-    reference: String(formData.get("reference") ?? "") === "yes",
-    impact: Number(formData.get("impact") ?? 3),
-  };
+    const payload = {
+      trigger,
+      classification: classificationForSave,
+      next_action: actionForSave,
+      outcome: outcomeForSave,
+      stability: Number(formData.get("stability") ?? 5),
+      reference: String(formData.get("reference") ?? "") === "yes",
+      impact: Number(formData.get("impact") ?? 3),
+    };
 
     setIsSaving(true);
     setSaveError("");
@@ -205,6 +216,7 @@ export default function SessionPage() {
       setShowSavedConfirmation(true);
       form.reset();
       setPreview(null);
+      setActionResolution(null);
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Failed to save session.");
     } finally {
@@ -213,10 +225,7 @@ export default function SessionPage() {
   }
 
   function confirmBellCheckpoint() {
-    if (
-      bellInput.trim().toLowerCase() !==
-      BELL_CONFIRMATION_TEXT.toLowerCase()
-    ) {
+    if (bellInput !== BELL_CONFIRMATION_TEXT) {
       return;
     }
 
@@ -228,7 +237,9 @@ export default function SessionPage() {
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10">
       <h1 className="text-2xl text-white">AXIS / Session</h1>
-      <p className="text-sm text-zinc-300">The system structures. You decide.</p>
+      <p className="text-sm text-zinc-300">
+        AXIS classifies. AXIS returns one action. You execute or decline.
+      </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -268,89 +279,75 @@ export default function SessionPage() {
           </div>
         </div>
 
-        {preview && (
-          <div className="space-y-4 rounded-md border border-zinc-700 bg-zinc-800 p-4 text-zinc-100">
-            <div>
-              <div className="text-sm text-zinc-400">3. System Classification</div>
-              <div className="font-medium">{formatClassification(classification)}</div>
+        <div className="space-y-4 rounded-md border border-zinc-700 bg-zinc-800 p-4 text-zinc-100">
+          <div>
+            <div className="text-sm text-zinc-400">3. System Classification</div>
+            <div className="font-medium">
+              {preview
+                ? formatClassification(classification)
+                : "Classification appears after the situation is processed."}
             </div>
+          </div>
 
+          {preview ? (
             <div>
               <div className="text-sm text-zinc-400">Detected Structure</div>
               <div className="font-medium">
                 {renderPreviewValue(preview.fracture)}
               </div>
             </div>
+          ) : null}
 
-            <div>
-              <div className="text-sm text-zinc-400">Reframe</div>
-              <div className="font-medium">
-                {renderPreviewValue(preview.reframe)}
-              </div>
-            </div>
-
-            <div>
-              <div className="text-sm text-zinc-400">Signal Protocol</div>
-              <ol className="ml-5 list-decimal space-y-1">
-                {redirectSteps.length > 0 ? (
-                  redirectSteps.map((step, i) => <li key={i}>{step}</li>)
-                ) : (
-                  <li>No steps available.</li>
-                )}
-              </ol>
+          <div>
+            <div className="text-sm text-zinc-400">4. AXIS Action</div>
+            <div className="mt-2 rounded-md border border-zinc-700 bg-zinc-900 p-3 text-sm leading-6 text-zinc-100">
+              {preview
+                ? axisAction
+                : "AXIS action appears after the situation is processed."}
             </div>
           </div>
-        )}
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-zinc-100" htmlFor="next_action">
-            4. Next Action
-          </label>
-          <textarea
-            id="next_action"
-            name="next_action"
-            required
-            placeholder="e.g., Rewrite the event in factual terms and send one clear response."
-            className="w-full rounded-md border border-zinc-500 bg-zinc-800 p-3 text-zinc-50"
-          />
-          <p className="text-sm text-zinc-300">
-            Enter the next concrete action to take now. Keep it short and specific.
-          </p>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-zinc-100" htmlFor="outcome">
-            Outcome
-          </label>
-          <select
-            id="outcome"
-            name="outcome"
-            required
-            className="w-full rounded-md border border-zinc-500 bg-zinc-800 p-3 text-zinc-50"
-          >
-            <option value="">Select outcome</option>
-            {OUTCOME_HELPERS.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-          <div className="space-y-1 rounded-md border border-zinc-700 bg-zinc-900 p-3 text-xs text-zinc-300">
-            <p className="text-zinc-200">Outcome helper definitions:</p>
-            {OUTCOME_HELPERS.map((item) => (
-              <p key={item.value}>
-                <span className="font-medium">{item.label}:</span> {item.helper}
-              </p>
-            ))}
+        <div className="space-y-3 rounded-md border border-zinc-700 bg-zinc-900 p-4">
+          <div className="text-sm font-medium text-zinc-100">
+            5. Execution Decision
           </div>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => setActionResolution("executed")}
+              disabled={!preview}
+              className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Execute
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setBellInput("");
+                setShowBellCheckpoint(true);
+              }}
+              disabled={!preview}
+              className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Not Executed / Ring Bell
+            </button>
+          </div>
+          {actionResolution ? (
+            <p className="text-sm text-zinc-400">
+              {actionResolution === "executed"
+                ? "Executed."
+                : "Execution declined. Pattern remains active."}
+            </p>
+          ) : null}
         </div>
 
         <button
           type="submit"
-          disabled={isPending || isSaving}
+          disabled={!preview || isPending || isSaving}
           className="rounded-md bg-zinc-100 px-4 py-2 text-zinc-900 disabled:opacity-60"
         >
-          {isSaving ? "Saving..." : "5. Save"}
+          {isSaving ? "Saving..." : "Log Session"}
         </button>
 
         {showSavedConfirmation && (
@@ -374,37 +371,6 @@ export default function SessionPage() {
               </pre>
             </div>
 
-            <div className="space-y-3 border-t border-zinc-800 pt-4">
-              <div className="text-sm font-medium text-zinc-100">
-                Action Resolution
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActionResolution("executed")}
-                  className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
-                >
-                  Executed
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBellInput("");
-                    setShowBellCheckpoint(true);
-                  }}
-                  className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
-                >
-                  Not Executed
-                </button>
-              </div>
-              {actionResolution ? (
-                <p className="text-sm text-zinc-400">
-                  {actionResolution === "executed"
-                    ? "Executed."
-                    : "Execution declined. Pattern remains active."}
-                </p>
-              ) : null}
-            </div>
           </div>
         )}
 
