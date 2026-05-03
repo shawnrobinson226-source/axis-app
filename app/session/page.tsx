@@ -121,6 +121,7 @@ function getAxisAction(preview: Preview | null) {
 }
 
 export default function SessionPage() {
+  const [trigger, setTrigger] = useState("");
   const [preview, setPreview] = useState<Preview | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isSaving, setIsSaving] = useState(false);
@@ -139,10 +140,24 @@ export default function SessionPage() {
   const [showBellCheckpoint, setShowBellCheckpoint] = useState(false);
   const [bellInput, setBellInput] = useState("");
 
-  function handleAnalyze(trigger: string) {
-    if (!trigger.trim()) return;
+  function handleTriggerChange(value: string) {
+    setTrigger(value);
+    setSaveError("");
 
-    const analysis = analyzeTrigger(trigger);
+    if (preview) {
+      setPreview(null);
+      setActionResolution(null);
+      setShowBellCheckpoint(false);
+      setBellInput("");
+      setProtocolOutput(null);
+      setShowSavedConfirmation(false);
+    }
+  }
+
+  function handleAnalyze(triggerValue: string) {
+    if (!triggerValue.trim()) return null;
+
+    const analysis = analyzeTrigger(triggerValue);
     startTransition(() => {
       setPreview(analysis);
     });
@@ -164,19 +179,28 @@ export default function SessionPage() {
       return;
     }
 
+    if (!preview || !axisAction) {
+      setSaveError("Process the situation before logging.");
+      setShowSavedConfirmation(false);
+      return;
+    }
+
+    if (!actionResolution) {
+      setSaveError("Execute or decline the AXIS action before logging.");
+      setShowSavedConfirmation(false);
+      return;
+    }
+
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const trigger = String(formData.get("trigger") ?? "");
-    const analysis = preview ?? handleAnalyze(trigger) ?? analyzeTrigger(trigger);
-    const classificationForSave = classifyFromAnalysis(analysis);
-    const actionForSave = getAxisAction(analysis);
+    const classificationForSave = classifyFromAnalysis(preview);
     const outcomeForSave =
       actionResolution === "executed" ? "reduced" : "unresolved";
 
     const payload = {
       trigger,
       classification: classificationForSave,
-      next_action: actionForSave,
+      next_action: axisAction,
       outcome: outcomeForSave,
       stability: Number(formData.get("stability") ?? 5),
       reference: String(formData.get("reference") ?? "") === "yes",
@@ -186,7 +210,6 @@ export default function SessionPage() {
     setIsSaving(true);
     setSaveError("");
     setProtocolOutput(null);
-    setActionResolution(null);
     setShowBellCheckpoint(false);
     setBellInput("");
     setShowSavedConfirmation(false);
@@ -215,6 +238,7 @@ export default function SessionPage() {
       );
       setShowSavedConfirmation(true);
       form.reset();
+      setTrigger("");
       setPreview(null);
       setActionResolution(null);
     } catch (error) {
@@ -264,10 +288,20 @@ export default function SessionPage() {
             id="trigger"
             name="trigger"
             required
+            value={trigger}
             placeholder="e.g., I got critical feedback from my manager and immediately felt defensive."
-            onBlur={(e) => handleAnalyze(e.target.value)}
+            onChange={(event) => handleTriggerChange(event.target.value)}
             className="w-full rounded-md border border-zinc-500 bg-zinc-800 p-3 text-zinc-50"
           />
+
+          <button
+            type="button"
+            onClick={() => handleAnalyze(trigger)}
+            disabled={!trigger.trim() || isPending}
+            className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Process Situation
+          </button>
 
           <p className="text-sm text-zinc-300">
             Describe the situation clearly. What is the problem, task, or
@@ -319,7 +353,7 @@ export default function SessionPage() {
             <button
               type="button"
               onClick={() => setActionResolution("executed")}
-              disabled={!preview}
+              disabled={!preview || !axisAction}
               className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Execute
@@ -330,7 +364,7 @@ export default function SessionPage() {
                 setBellInput("");
                 setShowBellCheckpoint(true);
               }}
-              disabled={!preview}
+              disabled={!preview || !axisAction}
               className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Not Executed / Ring Bell
@@ -347,7 +381,7 @@ export default function SessionPage() {
 
         <button
           type="submit"
-          disabled={!preview || isPending || isSaving}
+          disabled={!preview || !axisAction || !actionResolution || isPending || isSaving}
           className="rounded-md bg-zinc-100 px-4 py-2 text-zinc-900 disabled:opacity-60"
         >
           {isSaving ? "Saving..." : "Log Session"}
