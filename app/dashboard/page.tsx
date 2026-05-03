@@ -202,6 +202,7 @@ export default function DashboardPage() {
   const [state, setState] = useState<DashboardState>(EMPTY_STATE);
   const [volatilityBand, setVolatilityBand] = useState<"low" | "medium" | "high">("low");
   const [summary, setSummary] = useState<ThirtyDaySummary>(EMPTY_SUMMARY);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!operatorId) return;
@@ -245,14 +246,20 @@ export default function DashboardPage() {
 
         if (summaryResponse.ok && summaryBody.ok && summaryBody.data) {
           setSummary(summaryBody.data);
+        setIsLoading(false);
         }
       } catch {
+        setIsLoading(false);
         // Keep neutral fallback state on load failure.
       }
     })();
   }, [operatorId]);
 
   const { continuity, activeFracturesCount, recentSessions } = state;
+
+  if (isLoading) {
+    return null;
+  }
 
   if (recentSessions.length === 0) {
     return (
