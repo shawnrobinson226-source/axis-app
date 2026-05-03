@@ -225,7 +225,10 @@ export default function SessionPage() {
   }
 
   function confirmBellCheckpoint() {
-    if (bellInput !== BELL_CONFIRMATION_TEXT) {
+    if (
+  bellInput.trim().toLowerCase() !==
+  BELL_CONFIRMATION_TEXT.toLowerCase()
+) {
       return;
     }
 
