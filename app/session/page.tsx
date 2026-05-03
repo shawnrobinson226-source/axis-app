@@ -36,6 +36,8 @@ type SessionApiResponse = {
   };
 };
 
+const BELL_CONFIRMATION_TEXT = "I choose not to do this.";
+
 const OUTCOME_HELPERS: HelperDefinition[] = [
   {
     value: "reduced",
@@ -126,6 +128,11 @@ export default function SessionPage() {
   );
   const [saveError, setSaveError] = useState("");
   const [protocolOutput, setProtocolOutput] = useState<string | null>(null);
+  const [actionResolution, setActionResolution] = useState<
+    "executed" | "not_executed" | null
+  >(null);
+  const [showBellCheckpoint, setShowBellCheckpoint] = useState(false);
+  const [bellInput, setBellInput] = useState("");
 
   function handleAnalyze(trigger: string) {
     if (!trigger.trim()) return;
@@ -168,6 +175,9 @@ export default function SessionPage() {
     setIsSaving(true);
     setSaveError("");
     setProtocolOutput(null);
+    setActionResolution(null);
+    setShowBellCheckpoint(false);
+    setBellInput("");
     setShowSavedConfirmation(false);
 
     try {
@@ -200,6 +210,13 @@ export default function SessionPage() {
     } finally {
       setIsSaving(false);
     }
+  }
+
+  function confirmBellCheckpoint() {
+    if (bellInput !== BELL_CONFIRMATION_TEXT) return;
+    setActionResolution("not_executed");
+    setShowBellCheckpoint(false);
+    setBellInput("");
   }
 
   return (
@@ -350,8 +367,85 @@ export default function SessionPage() {
                 {protocolOutput ?? "Protocol output unavailable."}
               </pre>
             </div>
+
+            <div className="space-y-3 border-t border-zinc-800 pt-4">
+              <div className="text-sm font-medium text-zinc-100">
+                Action Resolution
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setActionResolution("executed")}
+                  className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
+                >
+                  Executed
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBellInput("");
+                    setShowBellCheckpoint(true);
+                  }}
+                  className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
+                >
+                  Not Executed
+                </button>
+              </div>
+              {actionResolution ? (
+                <p className="text-sm text-zinc-400">
+                  {actionResolution === "executed"
+                    ? "Executed."
+                    : "Bell checkpoint recorded."}
+                </p>
+              ) : null}
+            </div>
           </div>
         )}
+
+        {showBellCheckpoint ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6">
+            <div className="w-full max-w-lg space-y-5 rounded-md border border-zinc-700 bg-zinc-950 p-6 text-zinc-100 shadow-2xl">
+              <div className="space-y-3">
+                <h2 className="text-xl font-semibold">Ring the Bell</h2>
+                <div className="space-y-3 text-sm leading-6 text-zinc-300">
+                  <p>You are choosing not to execute the action.</p>
+                  <p>To continue, type exactly:</p>
+                  <p className="font-medium text-zinc-100">
+                    {BELL_CONFIRMATION_TEXT}
+                  </p>
+                </div>
+              </div>
+
+              <input
+                value={bellInput}
+                onChange={(event) => setBellInput(event.target.value)}
+                className="w-full rounded-md border border-zinc-600 bg-black p-3 text-zinc-50"
+                aria-label="Bell confirmation"
+              />
+
+              <div className="flex flex-wrap justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBellCheckpoint(false);
+                    setBellInput("");
+                  }}
+                  className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
+                >
+                  Return to Action
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmBellCheckpoint}
+                  disabled={bellInput !== BELL_CONFIRMATION_TEXT}
+                  className="rounded-md bg-zinc-100 px-4 py-2 text-sm text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Record Skip
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {saveError ? <p className="text-sm text-red-300">{saveError}</p> : null}
       </form>
