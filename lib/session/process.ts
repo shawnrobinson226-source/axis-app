@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { db, initDbIfNeeded } from "@/lib/db/client";
 import { runGuards } from "@/lib/engine/guards";
 import { runSessionEngine, type SessionInput } from "@/lib/engine/executionFlow";
+import { generateProtocolOutput } from "@/lib/engine/protocols";
 import {
   createExecutionTrace,
   addTraceEvent,
@@ -331,6 +332,11 @@ export async function processSession(input: ProcessSessionInput) {
     });
 
     const engineResult = runSessionEngine(engineInput);
+    const protocolOutput = generateProtocolOutput({
+      distortion: engineResult.distortion.class,
+      situation: trigger,
+      action: next_action,
+    });
 
     trace = addTraceEvent(trace, {
       stage: "engine",
@@ -526,6 +532,7 @@ export async function processSession(input: ProcessSessionInput) {
       steps_completed: engineResult.session.stepsCompleted,
       continuity_before: previous.continuity_score,
       continuity_after: next.continuity_score,
+      protocol_output: protocolOutput,
     };
   } catch (error) {
     failTrace(
