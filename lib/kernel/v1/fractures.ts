@@ -5,60 +5,182 @@ export const FRACTURES: readonly Fracture[] = [
     id: "control_loss",
     label: "Control Loss",
     description: "Triggered by loss of control or forced dependence.",
-    signals: ["out of control", "forced", "trapped", "no choice", "helpless"]
+    signals: [
+      "out of control",
+      "forced",
+      "trapped",
+      "no choice",
+      "helpless",
+      "can't control",
+      "losing control",
+      "no control",
+      "slipping",
+      "nothing I can do",
+      "powerless",
+    ]
   },
   {
     id: "rejection_sensitivity",
     label: "Rejection Sensitivity",
     description: "Triggered by perceived dismissal or abandonment.",
-    signals: ["ignored", "rejected", "left out", "unwanted", "alone"]
+    signals: [
+      "ignored",
+      "rejected",
+      "left out",
+      "unwanted",
+      "alone",
+      "dismissed",
+      "excluded",
+      "abandoned",
+      "not wanted",
+      "they don't care",
+      "no response",
+    ]
   },
   {
     id: "status_threat",
     label: "Status Threat",
     description: "Triggered by embarrassment or perceived disrespect.",
-    signals: ["disrespect", "embarrassed", "humiliated", "undermined"]
+    signals: [
+      "disrespect",
+      "embarrassed",
+      "humiliated",
+      "undermined",
+      "disrespected",
+      "looked down",
+      "not taken seriously",
+      "made me look",
+      "challenged my",
+      "questioned my",
+    ]
   },
   {
     id: "uncertainty_intolerance",
     label: "Uncertainty Intolerance",
     description: "Triggered by ambiguity or waiting.",
-    signals: ["not sure", "unclear", "waiting", "no answer", "unknown"]
+    signals: [
+      "not sure",
+      "unclear",
+      "waiting",
+      "no answer",
+      "unknown",
+      "don't know what",
+      "no idea",
+      "confusing",
+      "ambiguous",
+      "can't tell",
+      "uncertain",
+    ]
   },
   {
     id: "self_worth_dependency",
     label: "Self-Worth Dependency",
     description: "Triggered by value tied to outcome or approval.",
-    signals: ["not enough", "failure", "validation", "prove", "approved"]
+    signals: [
+      "not enough",
+      "failure",
+      "validation",
+      "prove",
+      "approved",
+      "worthless",
+      "not good enough",
+      "need to prove",
+      "feel like a failure",
+      "approval",
+      "what they think of me",
+    ]
   },
   {
     id: "boundary_violation",
     label: "Boundary Violation",
     description: "Triggered by overreach or intrusion.",
-    signals: ["crossed a line", "too far", "shouldn't", "invaded"]
+    signals: [
+      "crossed a line",
+      "too far",
+      "shouldn't",
+      "invaded",
+      "overstepped",
+      "violated",
+      "intruded",
+      "pushed too far",
+      "not okay",
+      "crossed my",
+    ]
   },
   {
     id: "comparison_spiral",
     label: "Comparison Spiral",
     description: "Triggered by measuring against others.",
-    signals: ["behind", "everyone else", "compare", "catch up"]
+    signals: [
+      "behind",
+      "everyone else",
+      "compare",
+      "catch up",
+      "ahead of me",
+      "doing better",
+      "why can't I",
+      "they have",
+      "measuring",
+      "falling behind",
+      "not as far",
+    ]
   },
   {
     id: "over_responsibility",
     label: "Over-Responsibility",
     description: "Triggered by carrying others' outcomes.",
-    signals: ["my fault", "have to fix", "responsible for"]
+    signals: [
+      "my fault",
+      "have to fix",
+      "responsible for",
+      "all on me",
+      "I have to handle",
+      "I need to fix",
+      "my problem to solve",
+      "if I don't",
+      "no one else will",
+    ]
   },
   {
     id: "avoidance_loop",
     label: "Avoidance Loop",
     description: "Triggered by procrastination or delay.",
-    signals: ["later", "avoid", "procrastinate", "too much"]
+    signals: [
+      "later",
+      "avoid",
+      "procrastinate",
+      "too much",
+      "avoiding",
+      "delaying",
+      "delay",
+      "not ready",
+      "not perfect",
+      "perfect",
+      "polish",
+      "refining",
+      "unfinished",
+      "keep putting off",
+      "haven't started",
+      "not the right time",
+      "waiting until",
+    ]
   },
   {
     id: "shame_spike",
     label: "Shame Spike",
     description: "Triggered by self-attack framing.",
-    signals: ["ashamed", "pathetic", "disgusting", "hate myself"]
+    signals: [
+      "ashamed",
+      "pathetic",
+      "disgusting",
+      "hate myself",
+      "embarrassing",
+      "stupid",
+      "idiot",
+      "such a failure",
+      "can't believe I",
+      "what is wrong with me",
+      "shame",
+    ]
   }
 ] as const;
