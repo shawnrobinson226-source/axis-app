@@ -149,7 +149,7 @@ function SummarySection({ summary }: { summary: ThirtyDaySummary }) {
           </div>
 
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
-            <p className="text-sm text-zinc-400">Most Common Distortion</p>
+            <p className="text-sm text-zinc-400">Most Common Pattern</p>
             <p className="mt-2 text-xl font-semibold capitalize text-zinc-100">
               {formatOptional(summary.most_common_distortion)}
             </p>
@@ -269,7 +269,7 @@ export default function DashboardPage() {
             AXIS / Dashboard
           </p>
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
-            Execution Patterns
+            Active Patterns
           </h1>
           <p className="max-w-3xl text-sm leading-6 text-zinc-400">
             Patterns appear after you log sessions.
@@ -281,7 +281,7 @@ export default function DashboardPage() {
             What Will Appear
           </h2>
           <ul className="mt-4 grid gap-3 text-sm text-zinc-300 md:grid-cols-2">
-            <li>Recurring distortion types</li>
+            <li>Recurring pattern types</li>
             <li>Outcome trends</li>
             <li>Continuity movement</li>
             <li>Execution patterns</li>
@@ -419,7 +419,7 @@ export default function DashboardPage() {
           AXIS / Dashboard
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
-          Execution Patterns
+          Active Patterns
         </h1>
         <p className="max-w-3xl text-sm leading-6 text-zinc-400">
           Pattern view of your logged sessions, outcomes, and continuity movement.
@@ -451,7 +451,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
-          <p className="text-sm text-zinc-400">Active Fractures</p>
+          <p className="text-sm text-zinc-400">Unresolved Patterns</p>
           <p className="mt-3 text-5xl font-semibold tracking-tight text-zinc-100">
             {activeFracturesCount}
           </p>
@@ -471,7 +471,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
-          <p className="text-sm text-zinc-200">Distortion Frequency</p>
+          <p className="text-sm text-zinc-200">Pattern Breakdown</p>
           <p className="mt-2 text-sm text-zinc-400">
             Patterns showing up most often
           </p>
@@ -601,7 +601,7 @@ export default function DashboardPage() {
               <thead className="bg-zinc-900/80">
                 <tr className="text-left text-xs uppercase tracking-[0.16em] text-zinc-500">
                   <th className="px-4 py-3 font-medium">Trigger</th>
-                  <th className="px-4 py-3 font-medium">Class</th>
+                  <th className="px-4 py-3 font-medium">Pattern</th>
                   <th className="px-4 py-3 font-medium">Outcome</th>
                   <th className="px-4 py-3 font-medium">Clarity</th>
                   <th className="px-4 py-3 font-medium">Continuity Δ</th>
