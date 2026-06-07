@@ -122,6 +122,13 @@ export default function SessionPage() {
   const [revealStep, setRevealStep] = useState(1);
   const [clarityError, setClarityError] = useState("");
   const [nextMove, setNextMove] = useState("");
+  const [aiCopy, setAiCopy] = useState<{
+    received: string;
+    whatAxisSees: string;
+    realityCheck: string;
+    interruption: string;
+  } | null>(null);
+  const [isDiscerning, setIsDiscerning] = useState(false);
 
   function resetSession() {
     setTrigger("");
@@ -130,6 +137,8 @@ export default function SessionPage() {
     setRevealStep(1);
     setClarityError("");
     setNextMove("");
+    setAiCopy(null);
+    setIsDiscerning(false);
   }
 
   function handleTriggerChange(value: string) {
@@ -141,6 +150,8 @@ export default function SessionPage() {
       setActionResolution(null);
       setRevealStep(1);
       setNextMove("");
+      setAiCopy(null);
+      setIsDiscerning(false);
     }
   }
 
@@ -158,7 +169,7 @@ export default function SessionPage() {
   const pattern = getPatternFromAnalysis(preview);
   const hasChosen = actionResolution !== null;
 
-  function handleSeeClearly() {
+  async function handleSeeClearly() {
     if (!trigger.trim()) {
       setClarityError("Name what is happening first.");
       return;
@@ -166,8 +177,36 @@ export default function SessionPage() {
 
     setClarityError("");
     const analysis = handleAnalyze(trigger);
+    if (!analysis) return;
 
-    if (analysis) {
+    const fractureId = getFractureId(analysis) ?? "";
+    const patternLabel = fractureId
+      ? (getPatternMetadata(fractureId)?.userLabel ?? "")
+      : "";
+
+    setIsDiscerning(true);
+    setAiCopy(null);
+
+    try {
+      const response = await fetch("/api/v1/session/discern", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          trigger: trigger.trim(),
+          fracture_id: fractureId,
+          pattern_label: patternLabel,
+        }),
+      });
+
+      const body = await response.json();
+
+      if (response.ok && body.ok && body.data) {
+        setAiCopy(body.data);
+      }
+    } catch {
+      // Silent fallback to registry copy.
+    } finally {
+      setIsDiscerning(false);
       setRevealStep(2);
       setNextMove("");
     }
@@ -281,10 +320,10 @@ export default function SessionPage() {
             <button
               type="button"
               onClick={handleSeeClearly}
-              disabled={isPending || isSaving}
+              disabled={isPending || isSaving || isDiscerning}
               className="rounded-md bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
             >
-              See Clearly
+              {isDiscerning ? "Reading the situation..." : "See Clearly"}
             </button>
           </div>
 
@@ -299,7 +338,7 @@ export default function SessionPage() {
               RECEIVED
             </h2>
             <p className="mt-4 text-lg leading-8 text-zinc-100">
-              {pattern[`${"receiv"}ed`]}
+              {aiCopy?.received ?? pattern.received}
             </p>
             {revealStep === 2 ? (
               <button
@@ -322,7 +361,7 @@ export default function SessionPage() {
               {pattern.userLabel}
             </p>
             <p className="mt-4 text-base leading-7 text-zinc-200">
-              {pattern.whatAxisSees}
+              {aiCopy?.whatAxisSees ?? pattern.whatAxisSees}
             </p>
             {revealStep === 3 ? (
               <button
@@ -342,7 +381,7 @@ export default function SessionPage() {
               REALITY CHECK
             </h2>
             <p className="mt-4 text-lg leading-8 text-zinc-100">
-              {pattern.realityCheck}
+              {aiCopy?.realityCheck ?? pattern.realityCheck}
             </p>
             {revealStep === 4 ? (
               <button
@@ -362,7 +401,7 @@ export default function SessionPage() {
               THE INTERRUPTION
             </h2>
             <p className="mt-4 text-lg leading-8 text-zinc-100">
-              {pattern.interruption}
+              {aiCopy?.interruption ?? pattern.interruption}
             </p>
             {revealStep === 5 ? (
               <button
