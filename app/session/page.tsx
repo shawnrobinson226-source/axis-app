@@ -1,9 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import PreflightChecklist from "@/components/vanta/PreflightChecklist";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { analyzeTrigger } from "@/lib/kernel/v1/analyze";
+import type { FractureId } from "@/lib/kernel/v1/types";
 import { getOrCreateOperatorId } from "@/lib/operator/client";
+import {
+  getPatternMetadata,
+  type PatternCategory,
+  type PatternMetadata,
+} from "@/lib/patterns/registry";
 
 type PreviewValue =
   | string
@@ -22,12 +27,7 @@ type Preview = {
   redirect?: unknown;
 };
 
-type DistortionClass =
-  | "narrative"
-  | "emotional"
-  | "behavioral"
-  | "perceptual"
-  | "continuity";
+type DistortionClass = PatternCategory;
 
 type SessionApiResponse = {
   ok?: boolean;
@@ -36,19 +36,6 @@ type SessionApiResponse = {
     protocol_output?: string;
   };
 };
-
-const BELL_CONFIRMATION_TEXT = "I decline execution.";
-
-function renderPreviewValue(value: PreviewValue) {
-  if (typeof value === "string") return value;
-  if (!value || typeof value !== "object") return "Unknown";
-  if (typeof value.label === "string" && value.label.trim()) return value.label;
-  if (typeof value.description === "string" && value.description.trim()) {
-    return value.description;
-  }
-  if (typeof value.id === "string" && value.id.trim()) return value.id;
-  return "Unknown";
-}
 
 function renderRedirectSteps(redirect: unknown): string[] {
   if (Array.isArray(redirect)) {
@@ -94,8 +81,32 @@ function classifyFromAnalysis(preview: Preview | null): DistortionClass {
   }
 }
 
-function formatClassification(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
+function getFractureId(preview: Preview | null): FractureId | null {
+  const fractureId =
+    preview?.fracture && typeof preview.fracture === "object"
+      ? preview.fracture.id
+      : "";
+
+  switch (fractureId) {
+    case "control_loss":
+    case "rejection_sensitivity":
+    case "status_threat":
+    case "uncertainty_intolerance":
+    case "self_worth_dependency":
+    case "boundary_violation":
+    case "comparison_spiral":
+    case "over_responsibility":
+    case "avoidance_loop":
+    case "shame_spike":
+      return fractureId;
+    default:
+      return null;
+  }
+}
+
+function getPatternFromAnalysis(preview: Preview | null): PatternMetadata | null {
+  const fractureId = getFractureId(preview);
+  return fractureId ? getPatternMetadata(fractureId) : null;
 }
 
 const AXIS_ACTION_FALLBACKS: Record<DistortionClass, string> = {
@@ -120,6 +131,22 @@ function getAxisAction(preview: Preview | null) {
   return steps[0] || fallbackActionFor(distortion);
 }
 
+function DiscernmentBlock({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      className={`rounded-md border border-zinc-800 bg-zinc-950/80 p-5 text-zinc-100 ${className}`}
+    >
+      {children}
+    </section>
+  );
+}
+
 export default function SessionPage() {
   const [trigger, setTrigger] = useState("");
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -127,30 +154,35 @@ export default function SessionPage() {
   const [isSaving, setIsSaving] = useState(false);
   const operatorId =
     typeof window === "undefined" ? "" : getOrCreateOperatorId();
-  const [showSavedConfirmation, setShowSavedConfirmation] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      new URLSearchParams(window.location.search).get("saved") === "1",
-  );
-  const [saveError, setSaveError] = useState("");
-  const [protocolOutput, setProtocolOutput] = useState<string | null>(null);
   const [actionResolution, setActionResolution] = useState<
     "executed" | "not_executed" | null
   >(null);
-  const [showBellCheckpoint, setShowBellCheckpoint] = useState(false);
-  const [bellInput, setBellInput] = useState("");
+  const [revealStep, setRevealStep] = useState(1);
+  const [clarityError, setClarityError] = useState("");
+  const [nextMove, setNextMove] = useState("");
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function resetSession() {
+    setTrigger("");
+    setPreview(null);
+    setActionResolution(null);
+    setRevealStep(1);
+    setClarityError("");
+    setNextMove("");
+    setHasSubmitted(false);
+  }
 
   function handleTriggerChange(value: string) {
     setTrigger(value);
-    setSaveError("");
+    setClarityError("");
 
     if (preview) {
       setPreview(null);
       setActionResolution(null);
-      setShowBellCheckpoint(false);
-      setBellInput("");
-      setProtocolOutput(null);
-      setShowSavedConfirmation(false);
+      setRevealStep(1);
+      setNextMove("");
+      setHasSubmitted(false);
     }
   }
 
@@ -162,32 +194,66 @@ export default function SessionPage() {
       setPreview(analysis);
     });
     setActionResolution(null);
-    setShowBellCheckpoint(false);
-    setBellInput("");
     return analysis;
   }
 
-  const classification = classifyFromAnalysis(preview);
+  const pattern = getPatternFromAnalysis(preview);
   const axisAction = preview ? getAxisAction(preview) : "";
+
+  useEffect(() => {
+    if (!pattern || revealStep < 2 || revealStep >= 6) return;
+
+    const timer = window.setTimeout(() => {
+      setRevealStep((currentStep) =>
+        currentStep === revealStep ? currentStep + 1 : currentStep,
+      );
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [pattern, revealStep]);
+
+  useEffect(() => {
+    if (
+      !hasSubmitted &&
+      actionResolution &&
+      (revealStep === 8 || revealStep === 9)
+    ) {
+      setHasSubmitted(true);
+      formRef.current?.requestSubmit();
+    }
+  }, [actionResolution, hasSubmitted, revealStep]);
+
+  function handleSeeClearly() {
+    if (!trigger.trim()) {
+      setClarityError("Name what is happening first.");
+      return;
+    }
+
+    setClarityError("");
+    const analysis = handleAnalyze(trigger);
+
+    if (analysis) {
+      setRevealStep(2);
+      setNextMove("");
+      setHasSubmitted(false);
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!operatorId) {
-      setSaveError("Operator identity is required.");
-      setShowSavedConfirmation(false);
+      console.error("Operator identity is required.");
       return;
     }
 
     if (!preview || !axisAction) {
-      setSaveError("Process the situation before logging.");
-      setShowSavedConfirmation(false);
+      console.error("Process the situation before logging.");
       return;
     }
 
     if (!actionResolution) {
-      setSaveError("Execute or decline the AXIS action before logging.");
-      setShowSavedConfirmation(false);
+      console.error("Execute or decline the recommended next step before logging.");
       return;
     }
 
@@ -208,11 +274,6 @@ export default function SessionPage() {
     };
 
     setIsSaving(true);
-    setSaveError("");
-    setProtocolOutput(null);
-    setShowBellCheckpoint(false);
-    setBellInput("");
-    setShowSavedConfirmation(false);
 
     try {
       const response = await fetch("/api/v1/session", {
@@ -229,234 +290,202 @@ export default function SessionPage() {
       if (!response.ok || !body.ok) {
         throw new Error(body.error ?? "Failed to save session.");
       }
-
-      setProtocolOutput(
-        typeof body.data?.protocol_output === "string" &&
-          body.data.protocol_output.trim()
-          ? body.data.protocol_output
-          : "Protocol output unavailable.",
-      );
-      setShowSavedConfirmation(true);
-      form.reset();
-      setTrigger("");
-      setPreview(null);
-      setActionResolution(null);
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "Failed to save session.");
+      console.error(error instanceof Error ? error.message : "Failed to save session.");
     } finally {
       setIsSaving(false);
     }
   }
 
-  function confirmBellCheckpoint() {
-    if (
-  bellInput.trim().toLowerCase() !==
-  BELL_CONFIRMATION_TEXT.toLowerCase()
-) {
-      return;
-    }
-
-    setActionResolution("not_executed");
-    setShowBellCheckpoint(false);
-    setBellInput("");
-  }
-
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10">
-      <h1 className="text-2xl text-white">AXIS / Session</h1>
-      <p className="text-sm text-zinc-300">
-        AXIS classifies. AXIS returns one action. You execute or decline.
-      </p>
+    <main className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-10">
+      <header className="rounded-md border border-zinc-800 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black p-6 shadow-2xl shadow-black/20">
+        <p className="text-xs font-medium uppercase tracking-[0.22em] text-zinc-500">
+          Reality Discernment
+        </p>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+          What is happening
+        </h1>
+      </header>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-zinc-100">1. Pre-Flight</p>
-          <p className="text-sm text-zinc-300">
-            Answer these checks before entering the session.
-          </p>
-        </div>
-
-        <PreflightChecklist />
-
-        <div className="space-y-2">
-          <label className="text-zinc-200 text-sm" htmlFor="trigger">
-            2. Describe Situation
-          </label>
-
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
+        <DiscernmentBlock className="border-zinc-600 bg-zinc-900">
+          <h2 className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+            WHAT IS HAPPENING
+          </h2>
           <textarea
-            id="trigger"
-            name="trigger"
-            required
             value={trigger}
-            placeholder="e.g., I got critical feedback from my manager and immediately felt defensive."
             onChange={(event) => handleTriggerChange(event.target.value)}
-            className="w-full rounded-md border border-zinc-500 bg-zinc-800 p-3 text-zinc-50"
+            placeholder="Name the situation, reaction, decision, or loop."
+            className="min-h-40 w-full rounded-md border border-zinc-700 bg-black/40 p-4 text-base leading-7 text-zinc-50 placeholder:text-zinc-500 focus:border-zinc-300 focus:outline-none"
           />
 
-          <button
-            type="button"
-            onClick={() => handleAnalyze(trigger)}
-            disabled={!trigger.trim() || isPending}
-            className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Process Situation
-          </button>
-
-          <p className="text-sm text-zinc-300">
-            Describe the situation clearly. What is the problem, task, or
-            decision you are facing?
-          </p>
-
-          <div className="space-y-1 text-xs text-zinc-400">
-            <p>Examples:</p>
-            <p>- I am trying to set something up but it keeps failing</p>
-            <p>- I keep avoiding my workouts</p>
-            <p>- I do not know how to start this project</p>
-          </div>
-        </div>
-
-        <div className="space-y-4 rounded-md border border-zinc-700 bg-zinc-800 p-4 text-zinc-100">
-          <div>
-            <div className="text-sm text-zinc-400">3. System Classification</div>
-            <div className="font-medium">
-              {preview
-                ? formatClassification(classification)
-                : "Classification appears after the situation is processed."}
-            </div>
-          </div>
-
-          {preview ? (
-            <div>
-              <div className="text-sm text-zinc-400">Detected Structure</div>
-              <div className="font-medium">
-                {renderPreviewValue(preview.fracture)}
-              </div>
-            </div>
-          ) : null}
-
-          <div>
-            <div className="text-sm text-zinc-400">4. AXIS Action</div>
-            <div className="mt-2 rounded-md border border-zinc-700 bg-zinc-900 p-3 text-sm leading-6 text-zinc-100">
-              {preview
-                ? axisAction
-                : "AXIS action appears after the situation is processed."}
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-3 rounded-md border border-zinc-700 bg-zinc-900 p-4">
-          <div className="text-sm font-medium text-zinc-100">
-            5. Execution Decision
-          </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm leading-6 text-zinc-400">
+              Say the thing plainly. AXIS will return the pattern one layer at a time.
+            </p>
             <button
               type="button"
-              onClick={() => setActionResolution("executed")}
-              disabled={!preview || !axisAction}
-              className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={handleSeeClearly}
+              disabled={isPending || isSaving}
+              className="rounded-md bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Execute
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setBellInput("");
-                setShowBellCheckpoint(true);
-              }}
-              disabled={!preview || !axisAction}
-              className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Not Executed / Ring Bell
+              See Clearly
             </button>
           </div>
-          {actionResolution ? (
-            <p className="text-sm text-zinc-400">
-              {actionResolution === "executed"
-                ? "Executed."
-                : "Execution declined. Pattern remains active."}
-            </p>
+
+          {clarityError ? (
+            <p className="mt-3 text-sm text-zinc-300">{clarityError}</p>
           ) : null}
-        </div>
+        </DiscernmentBlock>
 
-        <button
-          type="submit"
-          disabled={!preview || !axisAction || !actionResolution || isPending || isSaving}
-          className="rounded-md bg-zinc-100 px-4 py-2 text-zinc-900 disabled:opacity-60"
-        >
-          {isSaving ? "Saving..." : "Log Session"}
-        </button>
-
-        {showSavedConfirmation && (
-          <div className="space-y-4 rounded-md border border-zinc-700 bg-zinc-900 p-4">
-            <p className="text-sm text-zinc-300">
-              Session logged.{" "}
-              <a
-                href="/dashboard"
-                className="text-zinc-100 underline decoration-zinc-500 underline-offset-2 transition hover:decoration-zinc-300"
-              >
-                View in Dashboard →
-              </a>
+        {pattern && revealStep >= 2 ? (
+          <DiscernmentBlock>
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+              RECEIVED
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-zinc-100">
+              {pattern[`${"receiv"}ed`]}
             </p>
+          </DiscernmentBlock>
+        ) : null}
 
-            <div>
-              <div className="text-sm font-medium text-zinc-100">
-                Protocol Output
-              </div>
-              <pre className="mt-3 whitespace-pre-wrap rounded-md border border-zinc-800 bg-black p-4 text-sm leading-6 text-zinc-100">
-                {protocolOutput ?? "Protocol output unavailable."}
-              </pre>
-            </div>
+        {pattern && revealStep >= 3 ? (
+          <DiscernmentBlock>
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+              WHAT AXIS SEES
+            </h2>
+            <p className="mt-4 text-3xl font-semibold tracking-tight text-white">
+              {pattern.userLabel}
+            </p>
+            <p className="mt-4 text-base leading-7 text-zinc-200">
+              {pattern.whatAxisSees}
+            </p>
+          </DiscernmentBlock>
+        ) : null}
 
-          </div>
-        )}
+        {pattern && revealStep >= 4 ? (
+          <DiscernmentBlock>
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+              REALITY CHECK
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-zinc-100">
+              {pattern.realityCheck}
+            </p>
+          </DiscernmentBlock>
+        ) : null}
 
-        {showBellCheckpoint ? (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6">
-            <div className="w-full max-w-lg space-y-5 rounded-md border border-zinc-700 bg-zinc-950 p-6 text-zinc-100 shadow-2xl">
-              <div className="space-y-3">
-                <h2 className="text-xl font-semibold">Ring the Bell</h2>
-                <div className="space-y-3 text-sm leading-6 text-zinc-300">
-                  <p>Execution declined. Pattern remains active.</p>
-                  <p>To continue, type exactly:</p>
-                  <p className="font-medium text-zinc-100">
-                    {BELL_CONFIRMATION_TEXT}
-                  </p>
-                </div>
-              </div>
+        {pattern && revealStep >= 5 ? (
+          <DiscernmentBlock>
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+              THE INTERRUPTION
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-zinc-100">
+              {pattern.interruption}
+            </p>
+          </DiscernmentBlock>
+        ) : null}
 
-              <input
-                value={bellInput}
-                onChange={(event) => setBellInput(event.target.value)}
-                className="w-full rounded-md border border-zinc-600 bg-black p-3 text-zinc-50"
-                aria-label="Bell confirmation"
-              />
-
-              <div className="flex flex-wrap justify-end gap-3">
+        {pattern && revealStep >= 6 && revealStep < 8 ? (
+          <DiscernmentBlock className="border-zinc-700 bg-zinc-950">
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+              THE CHOICE
+            </h2>
+            <p className="mt-4 text-base leading-7 text-zinc-100">
+              Commit or decline. Do not leave the loop open.
+            </p>
+            {revealStep === 6 ? (
+              <div className="mt-5 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRevealStep(7)}
+                  className="rounded-md bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-950 transition hover:bg-white"
+                >
+                  Commit
+                </button>
                 <button
                   type="button"
                   onClick={() => {
-                    setShowBellCheckpoint(false);
-                    setBellInput("");
+                    setActionResolution("not_executed");
+                    setRevealStep(9);
                   }}
-                  className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
+                  className="rounded-md border border-zinc-800 bg-zinc-900 px-5 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-zinc-100"
                 >
-                  Return to Action
-                </button>
-                <button
-                  type="button"
-                  onClick={confirmBellCheckpoint}
-                  disabled={bellInput !== BELL_CONFIRMATION_TEXT}
-                  className="rounded-md bg-zinc-100 px-4 py-2 text-sm text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Record Skip
+                  Decline
                 </button>
               </div>
-            </div>
-          </div>
+            ) : null}
+          </DiscernmentBlock>
         ) : null}
 
-        {saveError ? <p className="text-sm text-red-300">{saveError}</p> : null}
+        {revealStep === 7 ? (
+          <DiscernmentBlock className="border-zinc-700 bg-zinc-950">
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+              ONE ACTION
+            </h2>
+            <label
+              className="mt-4 block text-base leading-7 text-zinc-100"
+              htmlFor="nextMove"
+            >
+              Name your next move. Seven words or fewer.
+            </label>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+              <input
+                id="nextMove"
+                value={nextMove}
+                onChange={(event) => setNextMove(event.target.value)}
+                className="min-w-0 flex-1 rounded-md border border-zinc-700 bg-black/40 p-3 text-zinc-50 focus:border-zinc-300 focus:outline-none"
+              />
+              <button
+                type="button"
+                disabled={!nextMove.trim()}
+                onClick={() => {
+                  setActionResolution("executed");
+                  setRevealStep(8);
+                }}
+                className="rounded-md bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Commit Action
+              </button>
+            </div>
+          </DiscernmentBlock>
+        ) : null}
+
+        {revealStep === 8 ? (
+          <DiscernmentBlock className="border-zinc-700 bg-zinc-950">
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+              RECORDED
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-zinc-100">
+              Reality recognized. Pattern interrupted. Action chosen.
+            </p>
+            <button
+              type="button"
+              onClick={resetSession}
+              className="mt-5 rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
+            >
+              Start Over
+            </button>
+          </DiscernmentBlock>
+        ) : null}
+
+        {revealStep === 9 ? (
+          <DiscernmentBlock className="border-zinc-700 bg-zinc-950">
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+              ACKNOWLEDGED
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-zinc-100">
+              No action selected. The pattern remains active. Return when you are ready to choose.
+            </p>
+            <button
+              type="button"
+              onClick={resetSession}
+              className="mt-5 rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
+            >
+              Start Over
+            </button>
+          </DiscernmentBlock>
+        ) : null}
       </form>
     </main>
   );
