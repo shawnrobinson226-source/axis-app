@@ -28,6 +28,7 @@ export type SessionLogRow = {
   id: string;
   trigger: string;
   distortion_class: DistortionClass;
+  fracture_id: string;
   protocol: string;
   next_action: string;
   outcome: SessionOutcome;
@@ -420,6 +421,7 @@ export async function getRecentSessions(operatorId: string, limit = 50): Promise
         id,
         trigger,
         distortion_class,
+        fracture_id,
         protocol,
         next_action,
         outcome,
@@ -444,6 +446,7 @@ export async function getRecentSessions(operatorId: string, limit = 50): Promise
       distortion_class: String(
         row.distortion_class ?? "narrative",
       ) as DistortionClass,
+      fracture_id: String(row.fracture_id ?? ""),
 
       protocol:
         typeof row.protocol === "string"

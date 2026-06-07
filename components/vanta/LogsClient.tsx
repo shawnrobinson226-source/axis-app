@@ -2,11 +2,11 @@
 
 import { useEffect, useState, useTransition } from "react";
 import {
-  type DistortionClass,
   type SessionOutcome,
   type SessionLogRow,
 } from "@/app/session/actions";
 import { getOrCreateOperatorId } from "@/lib/operator/client";
+import { PATTERN_METADATA } from "@/lib/patterns/registry";
 
 function buttonStyle(primary = false) {
   return {
@@ -31,21 +31,9 @@ function formatTime(value: string) {
   return d.toLocaleString();
 }
 
-function formatClass(value: DistortionClass) {
-  switch (value) {
-    case "narrative":
-      return "Narrative";
-    case "emotional":
-      return "Emotional";
-    case "behavioral":
-      return "Behavioral";
-    case "perceptual":
-      return "Perceptual";
-    case "continuity":
-      return "Continuity";
-    default:
-      return value;
-  }
+function resolvePatternLabel(fractureId: string): string {
+  const meta = PATTERN_METADATA[fractureId as keyof typeof PATTERN_METADATA];
+  return meta?.userLabel ?? fractureId;
 }
 
 function formatOutcome(value: SessionOutcome) {
@@ -248,7 +236,7 @@ export default function LogsClient({
           <div style={{ padding: 20 }}>
             <div style={{ fontWeight: 700 }}>No sessions logged yet.</div>
             <div style={{ marginTop: 8, opacity: 0.78 }}>
-              Each session records the trigger, classification, next action, and outcome.
+              Each session records the trigger, pattern, next action, and outcome.
             </div>
             <div style={{ marginTop: 16 }}>
               <a href="/session" style={buttonStyle(true)}>
@@ -289,7 +277,7 @@ export default function LogsClient({
                       width: 140,
                     }}
                   >
-                    Classification
+                    Pattern
                   </th>
                   <th
                     style={{
@@ -355,7 +343,7 @@ export default function LogsClient({
                         lineHeight: 1.4,
                       }}
                     >
-                      {formatClass(row.distortion_class)}
+                      {resolvePatternLabel(row.fracture_id)}
                     </td>
 
                     <td
