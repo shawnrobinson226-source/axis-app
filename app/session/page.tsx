@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { analyzeTrigger } from "@/lib/kernel/v1/analyze";
 import type { FractureId } from "@/lib/kernel/v1/types";
 import { getOrCreateOperatorId } from "@/lib/operator/client";
@@ -158,18 +158,6 @@ export default function SessionPage() {
   const pattern = getPatternFromAnalysis(preview);
   const hasChosen = actionResolution !== null;
 
-  useEffect(() => {
-    if (!pattern || revealStep < 2 || revealStep >= 6) return;
-
-    const timer = window.setTimeout(() => {
-      setRevealStep((currentStep) =>
-        currentStep === revealStep ? currentStep + 1 : currentStep,
-      );
-    }, 350);
-
-    return () => window.clearTimeout(timer);
-  }, [pattern, revealStep]);
-
   function handleSeeClearly() {
     if (!trigger.trim()) {
       setClarityError("Name what is happening first.");
@@ -245,21 +233,21 @@ export default function SessionPage() {
   async function handleCommitAction() {
     if (!nextMove.trim()) return;
 
-    setActionResolution("executed");
     await saveSession({
       resolution: "executed",
       nextAction: nextMove.trim(),
     });
     setRevealStep(8);
+    setActionResolution("executed");
   }
 
   async function handleDecline() {
-    setActionResolution("not_executed");
     await saveSession({
       resolution: "not_executed",
       nextAction: pattern?.interruption ?? "No action selected.",
     });
     setRevealStep(9);
+    setActionResolution("not_executed");
   }
 
   return (
@@ -312,6 +300,15 @@ export default function SessionPage() {
             <p className="mt-4 text-lg leading-8 text-zinc-100">
               {pattern[`${"receiv"}ed`]}
             </p>
+            {revealStep === 2 ? (
+              <button
+                type="button"
+                onClick={() => setRevealStep(3)}
+                className="mt-5 rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
+              >
+                Continue
+              </button>
+            ) : null}
           </DiscernmentBlock>
         ) : null}
 
@@ -326,6 +323,15 @@ export default function SessionPage() {
             <p className="mt-4 text-base leading-7 text-zinc-200">
               {pattern.whatAxisSees}
             </p>
+            {revealStep === 3 ? (
+              <button
+                type="button"
+                onClick={() => setRevealStep(4)}
+                className="mt-5 rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
+              >
+                Continue
+              </button>
+            ) : null}
           </DiscernmentBlock>
         ) : null}
 
@@ -337,6 +343,15 @@ export default function SessionPage() {
             <p className="mt-4 text-lg leading-8 text-zinc-100">
               {pattern.realityCheck}
             </p>
+            {revealStep === 4 ? (
+              <button
+                type="button"
+                onClick={() => setRevealStep(5)}
+                className="mt-5 rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
+              >
+                Continue
+              </button>
+            ) : null}
           </DiscernmentBlock>
         ) : null}
 
@@ -348,6 +363,15 @@ export default function SessionPage() {
             <p className="mt-4 text-lg leading-8 text-zinc-100">
               {pattern.interruption}
             </p>
+            {revealStep === 5 ? (
+              <button
+                type="button"
+                onClick={() => setRevealStep(6)}
+                className="mt-5 rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
+              >
+                Continue
+              </button>
+            ) : null}
           </DiscernmentBlock>
         ) : null}
 
