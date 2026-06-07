@@ -35,6 +35,7 @@ export type ProcessSessionInput = {
   operator_id: string;
   trigger: string;
   distortion_class: string;
+  fracture_id?: string;
   origin?: string;
   thought?: string;
   emotion?: string;
@@ -261,6 +262,7 @@ export async function processSession(input: ProcessSessionInput) {
     const operator_id = input.operator_id.trim();
     const trigger = input.trigger.trim();
     const distortion_class = parseDistortionClass(input.distortion_class.trim());
+    const fracture_id = input.fracture_id?.trim() ?? "";
     const next_action = input.next_action.trim();
     const origin = input.origin?.trim() || "local";
     const thought = input.thought?.trim() || trigger;
@@ -356,6 +358,7 @@ export async function processSession(input: ProcessSessionInput) {
           operator_id,
           trigger,
           distortion_class,
+          fracture_id,
           origin,
           thought,
           emotion,
@@ -368,13 +371,14 @@ export async function processSession(input: ProcessSessionInput) {
           continuity_score_before,
           continuity_score_after,
           created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       args: [
         sessionId,
         operator_id,
         trigger,
         engineResult.distortion.class,
+        fracture_id,
         origin,
         thought,
         emotion,

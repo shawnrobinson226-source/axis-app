@@ -32,7 +32,19 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const raw = await req.json();
+    const fracture_id =
+      raw && typeof raw === "object" && "fracture_id" in raw
+        ? typeof raw.fracture_id === "string"
+          ? raw.fracture_id
+          : ""
+        : "";
+    const body =
+      raw && typeof raw === "object" && !Array.isArray(raw)
+        ? Object.fromEntries(
+            Object.entries(raw).filter(([key]) => key !== "fracture_id"),
+          )
+        : raw;
     const validation = validateRequest(req, body);
     if (!validation.ok) {
       return apiError(validation.error, 400);
@@ -49,6 +61,7 @@ export async function POST(req: Request) {
       operator_id: validation.operatorId,
       trigger: validation.body.trigger,
       distortion_class: validation.body.classification,
+      fracture_id,
       next_action: validation.body.next_action,
       outcome: validation.body.outcome,
       stability: validation.body.stability,

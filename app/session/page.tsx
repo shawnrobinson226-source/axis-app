@@ -199,6 +199,7 @@ export default function SessionPage() {
     const payload = {
       trigger,
       classification: classificationForSave,
+      fracture_id: getFractureId(preview) ?? "",
       next_action: nextAction,
       outcome: outcomeForSave,
       stability: 5,
