@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { analyzeTrigger } from "@/lib/kernel/v1/analyze";
 import type { FractureId } from "@/lib/kernel/v1/types";
 import { getOrCreateOperatorId } from "@/lib/operator/client";
@@ -37,24 +37,10 @@ type SessionApiResponse = {
   };
 };
 
-function renderRedirectSteps(redirect: unknown): string[] {
-  if (Array.isArray(redirect)) {
-    return redirect.map((step) => String(step));
-  }
-
-  if (
-    redirect &&
-    typeof redirect === "object" &&
-    "steps" in redirect &&
-    Array.isArray((redirect as { steps?: unknown[] }).steps)
-  ) {
-    return ((redirect as { steps: unknown[] }).steps ?? []).map((step) =>
-      String(step),
-    );
-  }
-
-  return [];
-}
+type SaveSessionArgs = {
+  resolution: "executed" | "not_executed";
+  nextAction: string;
+};
 
 function classifyFromAnalysis(preview: Preview | null): DistortionClass {
   const fractureId =
@@ -109,28 +95,6 @@ function getPatternFromAnalysis(preview: Preview | null): PatternMetadata | null
   return fractureId ? getPatternMetadata(fractureId) : null;
 }
 
-const AXIS_ACTION_FALLBACKS: Record<DistortionClass, string> = {
-  narrative:
-    "Write the claim in one sentence. Then write one observable fact that supports or weakens it.",
-  emotional:
-    "Pause for 60 seconds. Name the emotion once. Do not act until the timer ends.",
-  behavioral:
-    "Start the smallest physical step now and continue for two minutes without evaluating.",
-  perceptual: "Write three facts and three assumptions. Act only on the facts.",
-  continuity:
-    "Name the objective, identify the deviation, and execute the next aligned step within five minutes.",
-};
-
-function fallbackActionFor(distortion: DistortionClass) {
-  return AXIS_ACTION_FALLBACKS[distortion];
-}
-
-function getAxisAction(preview: Preview | null) {
-  const distortion = classifyFromAnalysis(preview);
-  const steps = renderRedirectSteps(preview?.redirect);
-  return steps[0] || fallbackActionFor(distortion);
-}
-
 function DiscernmentBlock({
   children,
   className = "",
@@ -152,16 +116,12 @@ export default function SessionPage() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isSaving, setIsSaving] = useState(false);
-  const operatorId =
-    typeof window === "undefined" ? "" : getOrCreateOperatorId();
   const [actionResolution, setActionResolution] = useState<
     "executed" | "not_executed" | null
   >(null);
   const [revealStep, setRevealStep] = useState(1);
   const [clarityError, setClarityError] = useState("");
   const [nextMove, setNextMove] = useState("");
-  const [hasSubmitted, setHasSubmitted] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
 
   function resetSession() {
     setTrigger("");
@@ -170,7 +130,6 @@ export default function SessionPage() {
     setRevealStep(1);
     setClarityError("");
     setNextMove("");
-    setHasSubmitted(false);
   }
 
   function handleTriggerChange(value: string) {
@@ -182,7 +141,6 @@ export default function SessionPage() {
       setActionResolution(null);
       setRevealStep(1);
       setNextMove("");
-      setHasSubmitted(false);
     }
   }
 
@@ -198,7 +156,7 @@ export default function SessionPage() {
   }
 
   const pattern = getPatternFromAnalysis(preview);
-  const axisAction = preview ? getAxisAction(preview) : "";
+  const hasChosen = actionResolution !== null;
 
   useEffect(() => {
     if (!pattern || revealStep < 2 || revealStep >= 6) return;
@@ -212,17 +170,6 @@ export default function SessionPage() {
     return () => window.clearTimeout(timer);
   }, [pattern, revealStep]);
 
-  useEffect(() => {
-    if (
-      !hasSubmitted &&
-      actionResolution &&
-      (revealStep === 8 || revealStep === 9)
-    ) {
-      setHasSubmitted(true);
-      formRef.current?.requestSubmit();
-    }
-  }, [actionResolution, hasSubmitted, revealStep]);
-
   function handleSeeClearly() {
     if (!trigger.trim()) {
       setClarityError("Name what is happening first.");
@@ -235,42 +182,40 @@ export default function SessionPage() {
     if (analysis) {
       setRevealStep(2);
       setNextMove("");
-      setHasSubmitted(false);
     }
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function saveSession({ resolution, nextAction }: SaveSessionArgs) {
+    const operatorId =
+      typeof window === "undefined" ? "" : getOrCreateOperatorId();
 
     if (!operatorId) {
       console.error("Operator identity is required.");
       return;
     }
 
-    if (!preview || !axisAction) {
+    if (!preview) {
       console.error("Process the situation before logging.");
       return;
     }
 
-    if (!actionResolution) {
+    if (!resolution) {
       console.error("Execute or decline the recommended next step before logging.");
       return;
     }
 
-    const form = event.currentTarget;
-    const formData = new FormData(form);
     const classificationForSave = classifyFromAnalysis(preview);
     const outcomeForSave =
-      actionResolution === "executed" ? "reduced" : "unresolved";
+      resolution === "executed" ? "reduced" : "unresolved";
 
     const payload = {
       trigger,
       classification: classificationForSave,
-      next_action: axisAction,
+      next_action: nextAction,
       outcome: outcomeForSave,
-      stability: Number(formData.get("stability") ?? 5),
-      reference: String(formData.get("reference") ?? "") === "yes",
-      impact: Number(formData.get("impact") ?? 3),
+      stability: 5,
+      reference: true,
+      impact: 3,
     };
 
     setIsSaving(true);
@@ -297,6 +242,26 @@ export default function SessionPage() {
     }
   }
 
+  async function handleCommitAction() {
+    if (!nextMove.trim()) return;
+
+    setActionResolution("executed");
+    await saveSession({
+      resolution: "executed",
+      nextAction: nextMove.trim(),
+    });
+    setRevealStep(8);
+  }
+
+  async function handleDecline() {
+    setActionResolution("not_executed");
+    await saveSession({
+      resolution: "not_executed",
+      nextAction: pattern?.interruption ?? "No action selected.",
+    });
+    setRevealStep(9);
+  }
+
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-10">
       <header className="rounded-md border border-zinc-800 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black p-6 shadow-2xl shadow-black/20">
@@ -308,7 +273,7 @@ export default function SessionPage() {
         </h1>
       </header>
 
-      <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
+      <div className="space-y-5">
         <DiscernmentBlock className="border-zinc-600 bg-zinc-900">
           <h2 className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
             WHAT IS HAPPENING
@@ -399,16 +364,15 @@ export default function SessionPage() {
                 <button
                   type="button"
                   onClick={() => setRevealStep(7)}
+                  disabled={hasChosen || isSaving}
                   className="rounded-md bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-950 transition hover:bg-white"
                 >
                   Commit
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setActionResolution("not_executed");
-                    setRevealStep(9);
-                  }}
+                  onClick={handleDecline}
+                  disabled={hasChosen || isSaving}
                   className="rounded-md border border-zinc-800 bg-zinc-900 px-5 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-zinc-100"
                 >
                   Decline
@@ -438,11 +402,8 @@ export default function SessionPage() {
               />
               <button
                 type="button"
-                disabled={!nextMove.trim()}
-                onClick={() => {
-                  setActionResolution("executed");
-                  setRevealStep(8);
-                }}
+                disabled={!nextMove.trim() || hasChosen || isSaving}
+                onClick={handleCommitAction}
                 className="rounded-md bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Commit Action
@@ -486,7 +447,7 @@ export default function SessionPage() {
             </button>
           </DiscernmentBlock>
         ) : null}
-      </form>
+      </div>
     </main>
   );
 }
