@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getOrCreateOperatorId } from "@/lib/operator/client";
+import { PATTERN_METADATA } from "@/lib/patterns/registry";
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -40,6 +41,7 @@ type DashboardState = {
       | "behavioral"
       | "perceptual"
       | "continuity";
+    fracture_id: string;
     outcome: "reduced" | "unresolved" | "escalated";
     clarity_rating: number;
     continuity_before: number;
@@ -382,35 +384,11 @@ export default function DashboardPage() {
         ? "↓ unstable"
         : "→ forming";
 
-  const dominantDistortion = (
-    Object.entries(distortionFrequency) as Array<
-      [keyof typeof distortionFrequency, number]
-    >
-  ).reduce(
-    (currentMax, nextEntry) =>
-      nextEntry[1] > currentMax[1] ? nextEntry : currentMax,
-    ["narrative", distortionFrequency.narrative],
-  )[0];
-
-  const recommendedNextStep =
-    continuityStatusKey === "unstable"
-      ? "Start a new session now and reduce the current instability before doing anything else."
-      : dominantDistortion === "behavioral" && unresolved >= reduced
-        ? "Run a new session focused on repeated behavior patterns and define one concrete next action."
-        : dominantDistortion === "emotional" && stabilityTrendKey !== "improving"
-          ? "Run a new session on the current emotional trigger and reduce reactivity before acting."
-          : dominantDistortion === "narrative"
-            ? "Review the recurring narrative pattern and run a session to convert it into a concrete action path."
-            : continuityStatusKey === "forming"
-              ? "Keep the system moving: log the next real trigger and continue building consistency."
-              : continuityStatusKey === "stable" && reduced >= unresolved
-                ? "Maintain the current pattern. Review logs and continue executing without adding complexity."
-                : "Start a new session and clarify the current trigger before making the next move.";
-
   const recommendationText =
-    recentSessions.length === 0
-      ? "Log your first session to begin tracking patterns."
-      : recommendedNextStep;
+    typeof summary.most_repeated_pattern === "string" &&
+    summary.most_repeated_pattern.trim()
+      ? `Your most repeated pattern is ${summary.most_repeated_pattern}. Keep interrupting it. One session at a time.`
+      : "Log more sessions to generate a pattern-aware recommendation.";
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10">
@@ -441,6 +419,9 @@ export default function DashboardPage() {
             )}`}
           >
             {Math.round(continuity.continuity_score)}
+          </p>
+          <p className="mt-3 text-xs leading-5 text-zinc-500">
+            Continuity measures your consistency between what you intend and what you do. It moves when you complete sessions and follow through on committed actions.
           </p>
           {recentSessions.length === 0 ? (
             <p className="mt-3 text-sm text-zinc-400">Baseline. Updates after first session.</p>
@@ -623,7 +604,9 @@ export default function DashboardPage() {
                         {session.trigger}
                       </td>
                       <td className="px-4 py-4 align-top capitalize text-zinc-100">
-                        {session.distortion_class}
+                        {PATTERN_METADATA[
+                          session.fracture_id as keyof typeof PATTERN_METADATA
+                        ]?.userLabel ?? session.distortion_class}
                       </td>
                       <td className="px-4 py-4 align-top capitalize text-zinc-300">
                         {session.outcome}

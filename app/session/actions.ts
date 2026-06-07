@@ -45,6 +45,7 @@ type DashboardState = {
     id: string;
     trigger: string;
     distortion_class: DistortionClass;
+    fracture_id: string;
     outcome: SessionOutcome;
     clarity_rating: number;
     continuity_before: number;
@@ -287,6 +288,7 @@ export async function getDashboardState(
         id,
         trigger,
         distortion_class,
+        fracture_id,
         outcome,
         clarity_rating,
         continuity_score_before,
@@ -312,6 +314,7 @@ export async function getDashboardState(
         distortion_class: parseDistortionClass(
           readString(row, "distortion_class", "narrative"),
         ),
+        fracture_id: readString(row, "fracture_id", ""),
         outcome: parseOutcome(readString(row, "outcome", "unresolved")),
         clarity_rating: readNumber(row, "clarity_rating", 0),
         continuity_before: readNumber(row, "continuity_score_before", 0),
