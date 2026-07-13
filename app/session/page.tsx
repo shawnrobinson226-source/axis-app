@@ -207,7 +207,7 @@ export default function SessionPage() {
       // Silent fallback to registry copy.
     } finally {
       setIsDiscerning(false);
-      setRevealStep(2);
+      setRevealStep(6);
       setNextMove("");
     }
   }
@@ -332,120 +332,88 @@ export default function SessionPage() {
           ) : null}
         </DiscernmentBlock>
 
-        {pattern && revealStep >= 2 ? (
-          <DiscernmentBlock>
-            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-              WHAT YOU SAID
-            </h2>
-            <p className="mt-4 text-lg leading-8 text-zinc-100">
-              {aiCopy?.received ?? pattern.received}
-            </p>
-            {revealStep === 2 ? (
-              <button
-                type="button"
-                onClick={() => setRevealStep(3)}
-                className="mt-5 rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
-              >
-                Continue
-              </button>
-            ) : null}
-          </DiscernmentBlock>
-        ) : null}
-
-        {pattern && revealStep >= 3 ? (
-          <DiscernmentBlock>
-            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-              PATTERN DETECTED
-            </h2>
-            <p className="mt-4 text-3xl font-semibold tracking-tight text-white">
-              {pattern.userLabel}
-            </p>
-            <p className="mt-4 text-base leading-7 text-zinc-200">
-              {aiCopy?.whatAxisSees ?? pattern.whatAxisSees}
-            </p>
-            {revealStep === 3 ? (
-              <button
-                type="button"
-                onClick={() => setRevealStep(4)}
-                className="mt-5 rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
-              >
-                Continue
-              </button>
-            ) : null}
-          </DiscernmentBlock>
-        ) : null}
-
-        {pattern && revealStep >= 4 ? (
-          <DiscernmentBlock>
-            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-              WHAT IS HAPPENING
-            </h2>
-            <p className="mt-4 text-lg leading-8 text-zinc-100">
-              {aiCopy?.realityCheck ?? pattern.realityCheck}
-            </p>
-            {revealStep === 4 ? (
-              <button
-                type="button"
-                onClick={() => setRevealStep(5)}
-                className="mt-5 rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
-              >
-                Continue
-              </button>
-            ) : null}
-          </DiscernmentBlock>
-        ) : null}
-
-        {pattern && revealStep >= 5 ? (
-          <DiscernmentBlock>
-            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-              THE CUT
-            </h2>
-            <p className="mt-4 text-lg leading-8 text-zinc-100">
-              {aiCopy?.interruption ?? pattern.interruption}
-            </p>
-            {revealStep === 5 ? (
-              <button
-                type="button"
-                onClick={() => setRevealStep(6)}
-                className="mt-5 rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-100 transition hover:border-zinc-500"
-              >
-                Continue
-              </button>
-            ) : null}
-          </DiscernmentBlock>
-        ) : null}
-
         {pattern && revealStep >= 6 && revealStep < 8 ? (
           <DiscernmentBlock className="border-zinc-700 bg-zinc-950">
-            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-              NEXT ACTION
-            </h2>
-            <p className="mt-4 text-base leading-7 text-zinc-100">
-              Commit or decline. Do not leave the loop open.
-            </p>
-            {revealStep === 6 ? (
-              <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => setRevealStep(7)}
-                  disabled={hasChosen || isSaving}
-                  className="rounded-md bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-950 transition hover:bg-white"
-                >
-                  Commit
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDecline}
-                  disabled={hasChosen || isSaving}
-                  className="rounded-md border border-zinc-800 bg-zinc-900 px-5 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-zinc-100"
-                >
-                  Decline
-                </button>
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                  WHAT YOU SAID
+                </h2>
+                <p className="mt-3 text-base leading-7 text-zinc-200">
+                  {trigger}
+                </p>
               </div>
-            ) : null}
+
+              <div>
+                <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                  PATTERN
+                </h2>
+                <p className="mt-3 text-3xl font-semibold tracking-tight text-white">
+                  {pattern.userLabel}
+                </p>
+              </div>
+
+              <div>
+                <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                  WHAT IS HAPPENING
+                </h2>
+                <p className="mt-3 text-base leading-7 text-zinc-100">
+                  {aiCopy?.whatAxisSees ?? pattern.whatAxisSees}
+                </p>
+                <p className="mt-3 text-base leading-7 text-zinc-300">
+                  {aiCopy?.realityCheck ?? pattern.realityCheck}
+                </p>
+              </div>
+
+              <div>
+                <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                  THE CUT
+                </h2>
+                <p className="mt-3 text-lg leading-8 text-zinc-100">
+                  {aiCopy?.interruption ?? pattern.interruption}
+                </p>
+              </div>
+
+              <div>
+                <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                  FIELD MANUAL REFERENCE
+                </h2>
+                <p className="mt-3 text-base text-zinc-200">
+                  {pattern.userLabel}
+                </p>
+              </div>
+
+              <div className="border-t border-zinc-800 pt-5">
+                <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                  NEXT ACTION
+                </h2>
+                <p className="mt-3 text-base leading-7 text-zinc-100">
+                  Choose whether to interrupt the pattern now.
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRevealStep(7)}
+                    disabled={hasChosen || isSaving}
+                    className="rounded-md bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Record Action
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDecline}
+                    disabled={hasChosen || isSaving}
+                    className="rounded-md border border-zinc-800 bg-zinc-900 px-5 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-zinc-100"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            </div>
           </DiscernmentBlock>
         ) : null}
-
         {revealStep === 7 ? (
           <DiscernmentBlock className="border-zinc-700 bg-zinc-950">
             <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
@@ -515,4 +483,5 @@ export default function SessionPage() {
     </main>
   );
 }
+
 
