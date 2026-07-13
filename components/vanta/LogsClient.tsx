@@ -36,7 +36,7 @@ function resolvePatternLabel(fractureId: string): string {
   return meta?.userLabel ?? fractureId;
 }
 
-function formatOutcome(value: SessionOutcome) {
+function formatStatus(value: SessionOutcome) {
   switch (value) {
     case "reduced":
       return "Reduced";
@@ -90,12 +90,12 @@ export default function LogsClient({
       };
 
       if (!response.ok || !body.ok) {
-        throw new Error(body.error ?? "Failed to load session logs.");
+        throw new Error(body.error ?? "Failed to load execution records.");
       }
 
       setRows(body.data?.logs ?? []);
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Failed to load session logs.");
+      setMsg(e instanceof Error ? e.message : "Failed to load execution records.");
     }
   }
 
@@ -118,7 +118,7 @@ export default function LogsClient({
 
   function resetAll() {
     const confirmed = window.confirm(
-      "Delete all session history? This cannot be undone.",
+      "Delete all execution records? This cannot be undone.",
     );
 
     if (!confirmed) return;
@@ -143,7 +143,7 @@ export default function LogsClient({
         }
 
         await load(limit);
-        setMsg("All sessions were cleared.");
+        setMsg("Execution record cleared.");
       } catch (e) {
         setMsg(e instanceof Error ? e.message : "Reset failed.");
       }
@@ -152,9 +152,9 @@ export default function LogsClient({
 
   return (
     <main style={{ padding: 24, maxWidth: 1280 }}>
-      <h1 style={{ marginBottom: 8 }}>Logs</h1>
+      <h1 style={{ marginBottom: 8 }}>Execution Record</h1>
       <p style={{ marginTop: 0, opacity: 0.8 }}>
-        Review your recent sessions and outcomes.
+        Review your pattern checks, actions, and evidence.
       </p>
 
       <div
@@ -170,7 +170,7 @@ export default function LogsClient({
           htmlFor="limit"
           style={{ display: "flex", gap: 8, alignItems: "center" }}
         >
-          <span>Show</span>
+          <span>Display</span>
           <input
             id="limit"
             name="limit"
@@ -190,7 +190,7 @@ export default function LogsClient({
               color: "inherit",
             }}
           />
-          <span>sessions</span>
+          <span>records</span>
         </label>
 
         <button
@@ -217,7 +217,7 @@ export default function LogsClient({
           style={buttonStyle(false)}
           disabled={isPending}
         >
-          Reset (Delete All)
+          Clear Execution Record
         </button>
       </div>
 
@@ -234,13 +234,13 @@ export default function LogsClient({
       >
         {rows.length === 0 ? (
           <div style={{ padding: 20 }}>
-            <div style={{ fontWeight: 700 }}>No sessions logged yet.</div>
+            <div style={{ fontWeight: 700 }}>No execution records yet.</div>
             <div style={{ marginTop: 8, opacity: 0.78 }}>
-              Each session records the trigger, pattern, next action, and outcome.
+              Each pattern check records what happened, the detected pattern, the action taken, and its status.
             </div>
             <div style={{ marginTop: 16 }}>
               <a href="/session" style={buttonStyle(true)}>
-                Start Session →
+                Run Pattern Check →
               </a>
             </div>
           </div>
@@ -289,7 +289,7 @@ export default function LogsClient({
                       width: 180,
                     }}
                   >
-                    Outcome
+                    Status
                   </th>
                   <th
                     style={{
@@ -313,7 +313,7 @@ export default function LogsClient({
                       width: 320,
                     }}
                   >
-                    Trigger
+                    Situation
                   </th>
                 </tr>
               </thead>
@@ -353,7 +353,7 @@ export default function LogsClient({
                         borderBottom: "1px solid rgba(255,255,255,0.06)",
                       }}
                     >
-                      {formatOutcome(row.outcome)}
+                      {formatStatus(row.outcome)}
                     </td>
 
                     <td
@@ -385,3 +385,5 @@ export default function LogsClient({
     </main>
   );
 }
+
+
