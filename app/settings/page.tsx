@@ -34,12 +34,12 @@ export default function SettingsPage() {
       <h1 style={{ marginBottom: 8 }}>Settings</h1>
 
       <p style={{ marginTop: 0, opacity: 0.8 }}>
-        Operator identity and system utilities.
+        Identity, execution records, and AXIS controls.
       </p>
 
       <Card title="Operator Identity">
         <div style={{ opacity: 0.9, lineHeight: 1.5 }}>
-          Permanent identity and editable display label.
+          Your permanent AXIS identity and optional display name.
         </div>
         <OperatorIdentity />
       </Card>
@@ -50,13 +50,13 @@ export default function SettingsPage() {
         </div>
       </Card>
 
-      <Card title="Reset Logs">
+      <Card title="Clear Execution Record">
         <div style={{ opacity: 0.9, lineHeight: 1.5 }}>
-          This deletes all session data.
+          This deletes all pattern checks and execution records.
         </div>
 
         <div style={{ marginTop: 8, fontSize: 13, opacity: 0.7 }}>
-          Use this if you want to clear the dataset and start fresh.
+          Use this only when you intend to permanently clear your recorded evidence.
           This action cannot be undone.
         </div>
 
@@ -65,16 +65,16 @@ export default function SettingsPage() {
         </div>
       </Card>
 
-      <Card title="System Notes">
+      <Card title="AXIS Operating Rules">
         <ul style={{ margin: 0, paddingLeft: 18, opacity: 0.9, lineHeight: 1.5 }}>
-          <li>AXIS structures decisions into execution records.</li>
-          <li>No prediction.</li>
-          <li>No hidden automation.</li>
+          <li>AXIS identifies patterns, supports deliberate action, and records evidence.</li>
+          <li>No diagnosis.</li>
+          <li>No hidden decisions.</li>
           <li>You remain the decision authority.</li>
         </ul>
 
         <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
-          The system structures. The operator decides.
+          AXIS structures the process. The operator retains authority.
         </div>
       </Card>
     </main>

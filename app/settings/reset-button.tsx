@@ -12,7 +12,7 @@ export default function ResetButton() {
 
   function handleReset() {
     const confirmed = window.confirm(
-      "This deletes all session data. This cannot be undone.",
+      "This deletes all pattern checks and execution records. This cannot be undone.",
     );
 
     if (!confirmed) return;
@@ -61,7 +61,7 @@ export default function ResetButton() {
         opacity: isPending ? 0.7 : 1,
       }}
     >
-      {isPending ? "Resetting…" : "Reset All Session Data"}
+      {isPending ? "Clearing…" : "Clear Execution Record"}
     </button>
   );
 }

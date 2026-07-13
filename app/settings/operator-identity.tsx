@@ -120,7 +120,7 @@ export default function OperatorIdentity() {
       </label>
 
       <p style={{ margin: 0, fontSize: 13, opacity: 0.72 }}>
-        This name is for display only. Your system identity does not change.
+        Your display name may change. Your permanent AXIS identity does not.
       </p>
 
       <div>
