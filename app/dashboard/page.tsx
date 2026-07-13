@@ -130,10 +130,10 @@ function SummarySection({ summary }: { summary: ThirtyDaySummary }) {
     <section className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
       <div className="mb-5">
         <h2 className="text-lg font-medium text-zinc-100">
-          30-Day Execution Summary
+          30-Day Evidence Summary
         </h2>
         <p className="mt-1 text-sm text-zinc-400">
-          Operational memory from sessions logged in the last 30 days.
+          Evidence from pattern checks recorded in the last 30 days.
         </p>
       </div>
 
@@ -144,7 +144,7 @@ function SummarySection({ summary }: { summary: ThirtyDaySummary }) {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
-            <p className="text-sm text-zinc-400">Total Sessions</p>
+            <p className="text-sm text-zinc-400">Pattern Checks</p>
             <p className="mt-2 text-3xl font-semibold text-zinc-100">
               {summary.total_sessions}
             </p>
@@ -158,7 +158,7 @@ function SummarySection({ summary }: { summary: ThirtyDaySummary }) {
           </div>
 
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
-            <p className="text-sm text-zinc-400">Continuity Delta</p>
+            <p className="text-sm text-zinc-400">Evidence Change</p>
             <p className="mt-2 text-xl font-semibold text-zinc-100">
               {formatDelta(summary.continuity_change.delta)}
             </p>
@@ -169,7 +169,7 @@ function SummarySection({ summary }: { summary: ThirtyDaySummary }) {
           </div>
 
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
-            <p className="text-sm text-zinc-400">Outcome Counts</p>
+            <p className="text-sm text-zinc-400">Action Status</p>
             <div className="mt-2 space-y-1 text-sm text-zinc-100">
               <p>reduced: {summary.outcome_distribution.reduced}</p>
               <p>unresolved: {summary.outcome_distribution.unresolved}</p>
@@ -224,7 +224,9 @@ export default function DashboardPage() {
           data?: DashboardState & { volatilityBand?: "low" | "medium" | "high" };
         };
 
-        if (!response.ok || !body.ok || !body.data) return;
+        if (!response.ok || !body.ok || !body.data) {
+          return;
+        }
 
         setState({
           continuity: body.data.continuity,
@@ -248,11 +250,11 @@ export default function DashboardPage() {
 
         if (summaryResponse.ok && summaryBody.ok && summaryBody.data) {
           setSummary(summaryBody.data);
-        setIsLoading(false);
         }
       } catch {
-        setIsLoading(false);
         // Keep neutral fallback state on load failure.
+      } finally {
+        setIsLoading(false);
       }
     })();
   }, [operatorId]);
@@ -268,38 +270,38 @@ export default function DashboardPage() {
       <main className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10">
         <header className="space-y-3">
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
-            AXIS / Dashboard
+            AXIS / Evidence
           </p>
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
-            Active Patterns
+            Execution Evidence
           </h1>
           <p className="max-w-3xl text-sm leading-6 text-zinc-400">
-            Patterns appear after you log sessions.
+            Evidence appears after you record pattern checks.
           </p>
         </header>
 
         <section className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
           <h2 className="text-lg font-medium text-zinc-100">
-            What Will Appear
+            What AXIS Will Show
           </h2>
           <ul className="mt-4 grid gap-3 text-sm text-zinc-300 md:grid-cols-2">
-            <li>Recurring pattern types</li>
-            <li>Outcome trends</li>
-            <li>Continuity movement</li>
-            <li>Execution patterns</li>
+            <li>Repeated patterns</li>
+            <li>Completed and missed actions</li>
+            <li>Evidence movement</li>
+            <li>Return after failure</li>
           </ul>
         </section>
 
         <section className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
-          <p className="text-sm text-zinc-200">Recommended Next Step</p>
+          <p className="text-sm text-zinc-200">Next Deliberate Action</p>
           <p className="mt-3 text-sm leading-6 text-zinc-100">
-            Start a session and log one real situation.
+            Run one pattern check and record one deliberate action.
           </p>
           <a
             href="/session"
             className="mt-4 inline-flex rounded-xl border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-100 transition hover:border-zinc-500"
           >
-            Go to Session
+            Run Pattern Check
           </a>
         </section>
 
@@ -394,17 +396,16 @@ export default function DashboardPage() {
     <main className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10">
       <header className="space-y-3">
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
-          AXIS / Dashboard
+          AXIS / Evidence
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
-          Active Patterns
+          Execution Evidence
         </h1>
         <p className="max-w-3xl text-sm leading-6 text-zinc-400">
-          Pattern view of your logged sessions, outcomes, and continuity movement.
+          Evidence from your recorded patterns, actions, and follow-through.
         </p>
         <p className="max-w-3xl text-sm leading-6 text-zinc-300">
-          This dashboard reflects patterns from your logged sessions. More
-          entries = more accurate insights.
+          This view reflects recorded behavior. More evidence produces a clearer pattern history.
         </p>
       </header>
 
@@ -412,7 +413,7 @@ export default function DashboardPage() {
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
-          <p className="text-sm text-zinc-200">Continuity Score</p>
+          <p className="text-sm text-zinc-200">Execution Evidence</p>
           <p
             className={`mt-3 text-5xl font-bold tracking-tight ${continuityTone(
               continuity.continuity_score,
@@ -421,33 +422,33 @@ export default function DashboardPage() {
             {Math.round(continuity.continuity_score)}
           </p>
           <p className="mt-3 text-xs leading-5 text-zinc-500">
-            Continuity measures your consistency between what you intend and what you do. It moves when you complete sessions and follow through on committed actions.
+            This score reflects the relationship between recorded intention and completed action.
           </p>
           {recentSessions.length === 0 ? (
             <p className="mt-3 text-sm text-zinc-400">Baseline. Updates after first session.</p>
           ) : null}
           <p className="mt-3 text-sm text-zinc-300">
-            Last continuity update: {formatDate(continuity.updated_at)}
+            Last evidence update: {formatDate(continuity.updated_at)}
           </p>
         </div>
 
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
-          <p className="text-sm text-zinc-400">Unresolved Patterns</p>
+          <p className="text-sm text-zinc-400">Open Patterns</p>
           <p className="mt-3 text-5xl font-semibold tracking-tight text-zinc-100">
             {activeFracturesCount}
           </p>
           <p className="mt-3 text-sm text-zinc-500">
-            Sessions still unresolved or escalating.
+            Patterns without a recorded successful interruption.
           </p>
         </div>
 
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
-          <p className="text-sm text-zinc-400">30-Day Volatility</p>
+          <p className="text-sm text-zinc-400">30-Day Stability</p>
           <p className="mt-3 text-3xl font-semibold tracking-tight capitalize text-zinc-100">
             {volatilityBand}
           </p>
           <p className="mt-3 text-sm text-zinc-500">
-            Low is steady. High means drift risk.
+            Low means stable execution. High means repeated disruption.
           </p>
         </div>
 
@@ -466,9 +467,9 @@ export default function DashboardPage() {
         </div>
 
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
-          <p className="text-sm text-zinc-200">Outcome Distribution</p>
+          <p className="text-sm text-zinc-200">Action Status</p>
           <p className="mt-2 text-sm text-zinc-400">
-            How your situations are resolving
+            How recorded actions are resolving
           </p>
           <div className="mt-3 space-y-1 text-sm text-zinc-100">
             <p>reduced: {outcomeDistribution.reduced}</p>
@@ -478,9 +479,9 @@ export default function DashboardPage() {
         </div>
 
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
-          <p className="text-sm text-zinc-200">Stability Trend</p>
+          <p className="text-sm text-zinc-200">Execution Trend</p>
           <p className="mt-2 text-sm text-zinc-400">
-            Short-term direction of your outcomes
+            Short-term direction of recorded actions
           </p>
           <p className="mt-3 text-xl font-semibold text-zinc-100">
             {stabilityTrend}
@@ -488,9 +489,9 @@ export default function DashboardPage() {
         </div>
 
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
-          <p className="text-sm text-zinc-200">Continuity Status</p>
+          <p className="text-sm text-zinc-200">Evidence Status</p>
           <p className="mt-2 text-sm text-zinc-400">
-            Overall system stability based on recent outcomes
+            Overall execution stability based on recent records
           </p>
           <p className="mt-3 text-xl font-semibold text-zinc-100">
             {recentSessions.length === 0 ? "No data yet." : continuityStatus}
@@ -498,13 +499,12 @@ export default function DashboardPage() {
         </div>
 
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6 md:col-span-2 xl:col-span-2">
-          <p className="text-sm text-zinc-200">Recommended Next Step</p>
+          <p className="text-sm text-zinc-200">Next Deliberate Action</p>
           <p className="mt-2 text-sm text-zinc-400">
-            Priority action based on current pattern
+            Priority action based on the most repeated pattern
           </p>
           <p className="mt-2 text-xs text-zinc-500">
-            Recommended next step is based on your most recent session and
-            current pattern trend.
+            This recommendation is based on recent records and repeated patterns.
           </p>
           <p className="mt-3 text-sm leading-6 text-zinc-100">
             {recommendationText}
@@ -513,20 +513,20 @@ export default function DashboardPage() {
             href="/session"
             className="mt-4 inline-flex rounded-xl border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-100 transition hover:border-zinc-500"
           >
-            Go to Session
+            Run Pattern Check
           </a>
         </div>
 
         <p className="md:col-span-2 xl:col-span-4 text-xs text-zinc-500">
-          More reduced = improvement. More escalated = instability.
+          More reduced records indicate successful interruption. More escalated records indicate unresolved disruption.
         </p>
       </section>
 
       <section className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
         <div className="mb-5">
-          <h2 className="text-lg font-medium text-zinc-100">Alignment Dimensions</h2>
+          <h2 className="text-lg font-medium text-zinc-100">Execution Dimensions</h2>
           <p className="mt-1 text-sm text-zinc-400">
-            Balance across four core areas.
+            Current evidence across four behavioral dimensions.
           </p>
         </div>
 
@@ -555,12 +555,12 @@ export default function DashboardPage() {
       <section className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6">
         <div className="mb-5 flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-medium text-zinc-100">Recent Sessions</h2>
+            <h2 className="text-lg font-medium text-zinc-100">Recent Pattern Checks</h2>
             <p className="mt-1 text-sm text-zinc-400">
-              Your most recent completed sessions.
+              Your most recent recorded situations and actions.
             </p>
             <p className="mt-1 text-xs text-zinc-500">
-              Log at least one session to begin generating reliable patterns.
+              Record at least one pattern check to begin building evidence.
             </p>
           </div>
 
@@ -568,25 +568,25 @@ export default function DashboardPage() {
             href="/session"
             className="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-100 transition hover:border-zinc-500"
           >
-            Start New Session
+            Run Pattern Check
           </a>
         </div>
 
         {recentSessions.length === 0 ? (
           <div className="rounded-xl border border-dashed border-zinc-800 px-4 py-8 text-center text-sm text-zinc-500">
-            No sessions logged yet.
+            No pattern checks recorded yet.
           </div>
         ) : (
           <div className="overflow-hidden rounded-xl border border-zinc-800">
             <table className="w-full border-collapse">
               <thead className="bg-zinc-900/80">
                 <tr className="text-left text-xs uppercase tracking-[0.16em] text-zinc-500">
-                  <th className="px-4 py-3 font-medium">Trigger</th>
+                  <th className="px-4 py-3 font-medium">Situation</th>
                   <th className="px-4 py-3 font-medium">Pattern</th>
-                  <th className="px-4 py-3 font-medium">Outcome</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Clarity</th>
                   <th className="px-4 py-3 font-medium">Continuity Δ</th>
-                  <th className="px-4 py-3 font-medium">Created</th>
+                  <th className="px-4 py-3 font-medium">Recorded</th>
                 </tr>
               </thead>
               <tbody>
@@ -631,4 +631,7 @@ export default function DashboardPage() {
     </main>
   );
 }
+
+
+
 
