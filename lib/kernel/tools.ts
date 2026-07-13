@@ -1,5 +1,5 @@
 // lib/kernel/tools.ts
-// VANTA Kernel — Canonical Tools (executable action sequences)
+// AXIS Kernel — Canonical Tools (executable action sequences)
 // Tools are deterministic recipes. No AI. No side effects here—just definitions.
 
 import type { StateId } from "./states";

@@ -1,5 +1,5 @@
 // lib/kernel/logs.ts
-// VANTA Kernel — Canonical Logs (proof & telemetry)
+// AXIS Kernel — Canonical Logs (proof & telemetry)
 
 import type { StateId } from "./states";
 import type { ModeId } from "./modes";

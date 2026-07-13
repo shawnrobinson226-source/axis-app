@@ -1,5 +1,5 @@
 // lib/kernel/modes.ts
-// VANTA Kernel — Canonical Modes (response policies)
+// AXIS Kernel — Canonical Modes (response policies)
 // Modes control pacing + output style. They never override laws.
 
 export type ModeId = "CLARITY" | "MIRROR" | "COMMAND";

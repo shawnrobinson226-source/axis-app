@@ -8,7 +8,7 @@ import {
 const OPENAI_API_URL = "https://api.openai.com/v1/responses";
 
 const CLASSIFIER_PROMPT = `
-You are the VANTA Distortion Classifier.
+You are the AXIS Distortion Classifier.
 
 Your job is to classify the user's text into exactly one primary distortion class from this locked taxonomy:
 

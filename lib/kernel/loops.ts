@@ -1,5 +1,5 @@
 // lib/kernel/loops.ts
-// VANTA Kernel — Canonical Loops (repeatable cycles)
+// AXIS Kernel — Canonical Loops (repeatable cycles)
 // Loops define cadence + checkpoints. No execution logic here.
 
 import type { ToolId } from "./tools";

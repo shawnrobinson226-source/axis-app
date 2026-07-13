@@ -1,5 +1,5 @@
 // lib/kernel/laws.ts
-// VANTA Kernel — Canonical Laws (invariants / validators)
+// AXIS Kernel — Canonical Laws (invariants / validators)
 // NOTE: Laws define constraints. They do not execute workflows.
 
 export type LawId =
@@ -46,7 +46,7 @@ export const LAWS: Readonly<Record<LawId, Law>> = {
     id: "IDENTITY_FROM_REPETITION",
     title: "Identity is produced by repetition",
     statement:
-      "Identity in VANTA is modeled as patterns of repeated behavior over time, not self-description.",
+      "Identity in AXIS is modeled as patterns of repeated behavior over time, not self-description.",
     severity: "warn",
     tags: ["identity", "patterns"],
   },

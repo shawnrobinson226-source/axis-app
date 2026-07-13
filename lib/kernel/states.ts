@@ -1,5 +1,5 @@
 // lib/kernel/states.ts
-// VANTA Kernel — Canonical States (detectable user conditions)
+// AXIS Kernel — Canonical States (detectable user conditions)
 // States are inputs to resolution logic; they are not outcomes or identities.
 
 export type StateId =
