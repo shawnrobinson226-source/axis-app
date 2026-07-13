@@ -49,6 +49,31 @@ export default function SettingsPage() {
           {packageJson.version}
         </div>
       </Card>
+      <Card title="Support & Resources">
+        <div style={{ display: "grid", gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 13, opacity: 0.7 }}>Website</div>
+            <a
+              href="https://reapersofreality.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "inherit" }}
+            >
+              reapersofreality.com
+            </a>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 13, opacity: 0.7 }}>Email</div>
+            <a
+              href="mailto:wayofthereaper@gmail.com"
+              style={{ color: "inherit" }}
+            >
+              wayofthereaper@gmail.com
+            </a>
+          </div>
+        </div>
+      </Card>
 
       <Card title="Clear Execution Record">
         <div style={{ opacity: 0.9, lineHeight: 1.5 }}>
