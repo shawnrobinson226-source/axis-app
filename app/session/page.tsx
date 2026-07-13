@@ -294,7 +294,7 @@ export default function SessionPage() {
     <main className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-10">
       <header className="rounded-md border border-zinc-800 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black p-6 shadow-2xl shadow-black/20">
         <p className="text-xs font-medium uppercase tracking-[0.22em] text-zinc-500">
-          Reality Discernment
+          Pattern Check
         </p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
           What is happening
@@ -315,7 +315,7 @@ export default function SessionPage() {
 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm leading-6 text-zinc-400">
-              Say the thing plainly. AXIS will return the pattern one layer at a time.
+              Describe the situation plainly. AXIS will identify the active pattern and recommend one next action.
             </p>
             <button
               type="button"
@@ -323,7 +323,7 @@ export default function SessionPage() {
               disabled={isPending || isSaving || isDiscerning}
               className="rounded-md bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {isDiscerning ? "Reading the situation..." : "See Clearly"}
+              {isDiscerning ? "Reading the situation..." : "Run Pattern Check"}
             </button>
           </div>
 
@@ -335,7 +335,7 @@ export default function SessionPage() {
         {pattern && revealStep >= 2 ? (
           <DiscernmentBlock>
             <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-              RECEIVED
+              WHAT YOU SAID
             </h2>
             <p className="mt-4 text-lg leading-8 text-zinc-100">
               {aiCopy?.received ?? pattern.received}
@@ -355,7 +355,7 @@ export default function SessionPage() {
         {pattern && revealStep >= 3 ? (
           <DiscernmentBlock>
             <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-              WHAT AXIS SEES
+              PATTERN DETECTED
             </h2>
             <p className="mt-4 text-3xl font-semibold tracking-tight text-white">
               {pattern.userLabel}
@@ -378,7 +378,7 @@ export default function SessionPage() {
         {pattern && revealStep >= 4 ? (
           <DiscernmentBlock>
             <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-              REALITY CHECK
+              WHAT IS HAPPENING
             </h2>
             <p className="mt-4 text-lg leading-8 text-zinc-100">
               {aiCopy?.realityCheck ?? pattern.realityCheck}
@@ -398,7 +398,7 @@ export default function SessionPage() {
         {pattern && revealStep >= 5 ? (
           <DiscernmentBlock>
             <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-              THE INTERRUPTION
+              THE CUT
             </h2>
             <p className="mt-4 text-lg leading-8 text-zinc-100">
               {aiCopy?.interruption ?? pattern.interruption}
@@ -418,7 +418,7 @@ export default function SessionPage() {
         {pattern && revealStep >= 6 && revealStep < 8 ? (
           <DiscernmentBlock className="border-zinc-700 bg-zinc-950">
             <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-              THE CHOICE
+              NEXT ACTION
             </h2>
             <p className="mt-4 text-base leading-7 text-zinc-100">
               Commit or decline. Do not leave the loop open.
@@ -449,7 +449,7 @@ export default function SessionPage() {
         {revealStep === 7 ? (
           <DiscernmentBlock className="border-zinc-700 bg-zinc-950">
             <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-              ONE ACTION
+              RECORD ACTION
             </h2>
             <label
               className="mt-4 block text-base leading-7 text-zinc-100"
@@ -479,7 +479,7 @@ export default function SessionPage() {
         {revealStep === 8 ? (
           <DiscernmentBlock className="border-zinc-700 bg-zinc-950">
             <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-              RECORDED
+              EXECUTION RECORDED
             </h2>
             <p className="mt-4 text-lg leading-8 text-zinc-100">
               Reality recognized. Pattern interrupted. Action chosen.
@@ -497,7 +497,7 @@ export default function SessionPage() {
         {revealStep === 9 ? (
           <DiscernmentBlock className="border-zinc-700 bg-zinc-950">
             <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-              ACKNOWLEDGED
+              ACTION NOT RECORDED
             </h2>
             <p className="mt-4 text-lg leading-8 text-zinc-100">
               No action selected. The pattern remains active. Return when you are ready to choose.
@@ -515,3 +515,4 @@ export default function SessionPage() {
     </main>
   );
 }
+
