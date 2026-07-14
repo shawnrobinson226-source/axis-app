@@ -3,16 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, initDbIfNeeded } from "@/lib/db/client";
+import {
+  parseDistortionClass,
+  parseSessionOutcome as parseOutcome,
+  type DistortionClass,
+  type SessionOutcome,
+} from "@/lib/kernel/domain";
 import { processSession } from "@/lib/session/process";
 
-export type DistortionClass =
-  | "narrative"
-  | "emotional"
-  | "behavioral"
-  | "perceptual"
-  | "continuity";
-
-export type SessionOutcome = "reduced" | "unresolved" | "escalated";
+export type {
+  DistortionClass,
+  SessionOutcome,
+} from "@/lib/kernel/domain";
 
 export type ContinuityState = {
   operator_id: string;
@@ -90,32 +92,6 @@ function readNumber(row: Record<string, unknown>, key: string, fallback = 0) {
 
 function readString(row: Record<string, unknown>, key: string, fallback = "") {
   return String(row[key] ?? fallback);
-}
-
-function parseDistortionClass(value: string): DistortionClass {
-  const allowed: DistortionClass[] = [
-    "narrative",
-    "emotional",
-    "behavioral",
-    "perceptual",
-    "continuity",
-  ];
-
-  if (allowed.includes(value as DistortionClass)) {
-    return value as DistortionClass;
-  }
-
-  throw new Error(`Invalid distortion class: ${value}`);
-}
-
-function parseOutcome(value: string): SessionOutcome {
-  const allowed: SessionOutcome[] = ["reduced", "unresolved", "escalated"];
-
-  if (allowed.includes(value as SessionOutcome)) {
-    return value as SessionOutcome;
-  }
-
-  throw new Error(`Invalid session outcome: ${value}`);
 }
 
 function parseSessionForm(formData: FormData): ParsedSessionForm {
