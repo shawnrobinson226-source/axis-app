@@ -4,24 +4,29 @@ export const VANTA_SCHEMA_VERSION = "v1.0.0" as const;
 export const VANTA_TAXONOMY_VERSION = "v1.0.0" as const;
 export const VANTA_CONTINUITY_FORMULA_VERSION = "v1.0.0" as const;
 
+import {
+  DISTORTION_CLASS,
+  SESSION_OUTCOME,
+  type DistortionClass,
+  type SessionOutcome,
+} from "@/lib/kernel/domain";
+
+export {
+  DISTORTION_CLASS,
+  SESSION_OUTCOME,
+};
+
+export type {
+  DistortionClass,
+  SessionOutcome,
+};
+
 /**
  * Locked distortion taxonomy (V1)
  */
-export const DISTORTION_CLASS = [
-  "narrative",
-  "emotional",
-  "behavioral",
-  "perceptual",
-  "continuity",
-] as const;
-
-export type DistortionClass = (typeof DISTORTION_CLASS)[number];
 
 export const INTENSITY = ["low", "medium", "high"] as const;
 export type Intensity = (typeof INTENSITY)[number];
-
-export const SESSION_OUTCOME = ["reduced", "unresolved", "escalated"] as const;
-export type SessionOutcome = (typeof SESSION_OUTCOME)[number];
 
 export const REDUCTION_PROTOCOL = [
   "factual_rewrite",
