@@ -10,21 +10,17 @@ import {
   type SessionOutcome,
 } from "@/lib/kernel/domain";
 import { processSession } from "@/lib/session/process";
+import {
+  getOrCreateContinuityState,
+  type ContinuityState,
+} from "@/lib/session/continuity";
 
 export type {
   DistortionClass,
   SessionOutcome,
 } from "@/lib/kernel/domain";
 
-export type ContinuityState = {
-  operator_id: string;
-  perception_alignment: number;
-  identity_alignment: number;
-  intention_alignment: number;
-  action_alignment: number;
-  continuity_score: number;
-  updated_at: string;
-};
+export type { ContinuityState } from "@/lib/session/continuity";
 
 export type SessionLogRow = {
   id: string;
@@ -139,71 +135,7 @@ function parseSessionForm(formData: FormData): ParsedSessionForm {
   };
 }
 
-async function getOrCreateContinuityState(
-  operatorId: string,
-): Promise<ContinuityState> {
-  await initDbIfNeeded();
-
-  const existing = await db.execute({
-    sql: `
-      SELECT
-        operator_id,
-        perception_alignment,
-        identity_alignment,
-        intention_alignment,
-        action_alignment,
-        continuity_score,
-        updated_at
-      FROM continuity_states
-      WHERE operator_id = ?
-      LIMIT 1
-    `,
-    args: [operatorId],
-  });
-
-  const first = existing.rows?.[0] as Record<string, unknown> | undefined;
-
-  if (first) {
-    return {
-      operator_id: readString(first, "operator_id"),
-      perception_alignment: readNumber(first, "perception_alignment", 50),
-      identity_alignment: readNumber(first, "identity_alignment", 50),
-      intention_alignment: readNumber(first, "intention_alignment", 50),
-      action_alignment: readNumber(first, "action_alignment", 50),
-      continuity_score: readNumber(first, "continuity_score", 50),
-      updated_at: readString(first, "updated_at"),
-    };
-  }
-
-  await db.execute({
-    sql: `
-      INSERT OR IGNORE INTO continuity_states (
-        operator_id,
-        perception_alignment,
-        identity_alignment,
-        intention_alignment,
-        action_alignment,
-        continuity_score,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-    `,
-    args: [operatorId, 50, 50, 50, 50, 50],
-  });
-
-  return {
-    operator_id: operatorId,
-    perception_alignment: 50,
-    identity_alignment: 50,
-    intention_alignment: 50,
-    action_alignment: 50,
-    continuity_score: 50,
-    updated_at: new Date().toISOString(),
-  };
-}
-
-
-
-// âœ… CORE SAVE FUNCTION (API + Server Action safe)
+// CORE SAVE FUNCTION (API + Server Action safe)
 export async function saveSessionCore(input: {
   operator_id: string;
   trigger: string;
