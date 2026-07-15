@@ -6,18 +6,18 @@ export type RecomputeWindowDays = (typeof RECOMPUTE_WINDOWS_DAYS)[number];
 export const VOLATILITY_WINDOWS_DAYS = [30, 90] as const;
 export type VolatilityWindowDays = (typeof VOLATILITY_WINDOWS_DAYS)[number];
 
-export const DISTORTION_CLASSES = [
-  "narrative",
-  "emotional",
-  "behavioral",
-  "perceptual",
-  "continuity",
-] as const;
+import {
+  DISTORTION_CLASS,
+  SESSION_OUTCOME,
+} from "@/lib/kernel/domain";
 
-export type DistortionClass = (typeof DISTORTION_CLASSES)[number];
+export type {
+  DistortionClass,
+  SessionOutcome,
+} from "@/lib/kernel/domain";
 
-export const OUTCOMES = ["reduced", "unresolved", "escalated"] as const;
-export type SessionOutcome = (typeof OUTCOMES)[number];
+export const DISTORTION_CLASSES = DISTORTION_CLASS;
+export const OUTCOMES = SESSION_OUTCOME;
 
 // V1 guardrails (match your validator assumptions)
 export const REDUCED_MIN_STEPS = 6;
