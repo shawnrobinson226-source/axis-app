@@ -11,6 +11,11 @@ import { runGuards } from "@/lib/engine/guards";
 import { runSessionEngine, type SessionInput } from "@/lib/engine/executionFlow";
 import { generateProtocolOutput } from "@/lib/engine/protocols";
 import {
+  applyContinuityUpdate,
+  getOrCreateContinuityState,
+  saveContinuityState,
+} from "@/lib/session/continuity";
+import {
   createExecutionTrace,
   addTraceEvent,
   blockTrace,
@@ -18,16 +23,6 @@ import {
   completeTrace,
 } from "@/lib/trace/executionTrace";
 
-
-type ContinuityState = {
-  operator_id: string;
-  perception_alignment: number;
-  identity_alignment: number;
-  intention_alignment: number;
-  action_alignment: number;
-  continuity_score: number;
-  updated_at: string;
-};
 
 export type ProcessSessionInput = {
   operator_id: string;
@@ -105,123 +100,6 @@ async function appendEvent(args: {
       args.meta ? JSON.stringify(args.meta) : null,
     ],
   });
-}
-
-async function getOrCreateContinuityState(
-  operatorId: string,
-): Promise<ContinuityState> {
-  await initDbIfNeeded();
-
-  const existing = await db.execute({
-    sql: `
-      SELECT
-        operator_id,
-        perception_alignment,
-        identity_alignment,
-        intention_alignment,
-        action_alignment,
-        continuity_score,
-        updated_at
-      FROM continuity_states
-      WHERE operator_id = ?
-      LIMIT 1
-    `,
-    args: [operatorId],
-  });
-
-  const first = existing.rows?.[0] as Record<string, unknown> | undefined;
-
-  if (first) {
-    return {
-      operator_id: readString(first, "operator_id"),
-      perception_alignment: readNumber(first, "perception_alignment", 50),
-      identity_alignment: readNumber(first, "identity_alignment", 50),
-      intention_alignment: readNumber(first, "intention_alignment", 50),
-      action_alignment: readNumber(first, "action_alignment", 50),
-      continuity_score: readNumber(first, "continuity_score", 50),
-      updated_at: readString(first, "updated_at"),
-    };
-  }
-
-  await db.execute({
-    sql: `
-      INSERT OR IGNORE INTO continuity_states (
-        operator_id,
-        perception_alignment,
-        identity_alignment,
-        intention_alignment,
-        action_alignment,
-        continuity_score,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-    `,
-    args: [operatorId, 50, 50, 50, 50, 50],
-  });
-
-  return {
-    operator_id: operatorId,
-    perception_alignment: 50,
-    identity_alignment: 50,
-    intention_alignment: 50,
-    action_alignment: 50,
-    continuity_score: 50,
-    updated_at: new Date().toISOString(),
-  };
-}
-
-function applyContinuityUpdate(
-  previous: ContinuityState,
-  delta: {
-    perception: number;
-    identity: number;
-    intention: number;
-    action: number;
-  },
-): ContinuityState {
-  const perception_alignment = clamp(
-    previous.perception_alignment + delta.perception,
-    20,
-    95,
-  );
-
-  const identity_alignment = clamp(
-    previous.identity_alignment * 0.8 +
-      (previous.identity_alignment + delta.identity) * 0.2,
-    20,
-    95,
-  );
-
-  const intention_alignment = clamp(
-    previous.intention_alignment + delta.intention,
-    20,
-    95,
-  );
-
-  const action_alignment = clamp(
-    previous.action_alignment + delta.action,
-    20,
-    95,
-  );
-
-  const continuity_score = clamp(
-    (perception_alignment +
-      identity_alignment +
-      intention_alignment +
-      action_alignment) /
-      4,
-    20,
-    95,
-  );
-
-  return {
-    operator_id: previous.operator_id,
-    perception_alignment,
-    identity_alignment,
-    intention_alignment,
-    action_alignment,
-    continuity_score,
-    updated_at: new Date().toISOString(),
-  };
 }
 
 export async function processSession(input: ProcessSessionInput) {
@@ -367,36 +245,7 @@ export async function processSession(input: ProcessSessionInput) {
         new Date().toISOString(),
       ],
     });
-
-    await db.execute({
-      sql: `
-        INSERT INTO continuity_states (
-          operator_id,
-          perception_alignment,
-          identity_alignment,
-          intention_alignment,
-          action_alignment,
-          continuity_score,
-          updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(operator_id) DO UPDATE SET
-          perception_alignment = excluded.perception_alignment,
-          identity_alignment = excluded.identity_alignment,
-          intention_alignment = excluded.intention_alignment,
-          action_alignment = excluded.action_alignment,
-          continuity_score = excluded.continuity_score,
-          updated_at = excluded.updated_at
-      `,
-      args: [
-        next.operator_id,
-        next.perception_alignment,
-        next.identity_alignment,
-        next.intention_alignment,
-        next.action_alignment,
-        next.continuity_score,
-        next.updated_at,
-      ],
-    });
+    await saveContinuityState(next);
 
     await db.execute({
       sql: `
