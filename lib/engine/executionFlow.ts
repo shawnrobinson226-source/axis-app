@@ -1,11 +1,7 @@
-export type DistortionClass =
-  | "narrative"
-  | "emotional"
-  | "behavioral"
-  | "perceptual"
-  | "continuity";
-
-export type SessionOutcome = "reduced" | "unresolved" | "escalated";
+import type {
+  DistortionClass,
+  SessionOutcome,
+} from "@/lib/kernel/domain";
 
 export type SessionInput = {
   trigger: string;
