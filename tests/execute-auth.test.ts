@@ -1,4 +1,6 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { revalidatePath } from "next/cache";
+import { db } from "@/lib/db/client";
 import { POST } from "@/app/api/v2/execute/route";
 import {
   TEST_TOKEN,
@@ -9,6 +11,10 @@ import {
   resetRows,
   rowCounts,
 } from "./helpers";
+
+// revalidatePath needs a live Next.js request store, which direct handler calls do
+// not have. Test-only stub; production code is unchanged.
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 const OPERATOR = "op_test_execute_operator";
 const VALID_BODY = {
@@ -38,6 +44,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await resetRows();
   process.env.AXIS_SERVICE_TOKEN = TEST_TOKEN;
+  vi.mocked(revalidatePath).mockClear();
 });
 
 afterEach(() => {
@@ -202,28 +209,91 @@ describe("validation after valid auth", () => {
 });
 
 describe("DB failure responses are generic", () => {
-  it("authorized valid body on local schema.sql (no sessions.fracture_id) -> 500 internal_error, no SQL text", async () => {
-    expect(schemaHasFractureId).toBe(false);
+  it("authorized valid body with a local DB error -> 500 internal_error, no SQL text", async () => {
+    // Force a genuine libsql error on the local file DB only: hide a table the
+    // execute path writes to, then restore it.
+    await db.execute(`ALTER TABLE derived_session_index RENAME TO derived_session_index_hidden`);
+    try {
+      const { res, text } = await execute({
+        authorization: `Bearer ${TEST_TOKEN}`,
+        "x-operator-id": OPERATOR,
+      });
+      expect(res.status).toBe(500);
+      expect(JSON.parse(text).error).toBe("internal_error");
+      expect(text).not.toMatch(/derived_session_index|SQLITE|no such table|libsql/i);
+    } finally {
+      await db.execute(`ALTER TABLE derived_session_index_hidden RENAME TO derived_session_index`);
+    }
+  });
+});
+
+describe("authorized execute success path", () => {
+  it("schema.sql defines sessions.fracture_id", async () => {
+    expect(schemaHasFractureId).toBe(true);
+  });
+
+  it("valid bearer + operator + valid body -> 200 ok:true with exact row effects", async () => {
     const before = await rowCounts();
-    const { res, text } = await execute({
+    const { res, json } = await execute({
       authorization: `Bearer ${TEST_TOKEN}`,
       "x-operator-id": OPERATOR,
     });
-    expect(res.status).toBe(500);
-    expect(JSON.parse(text).error).toBe("internal_error");
-    expect(text).not.toMatch(/fracture_id|SQLITE|no column|libsql|sessions/i);
-    const after = await rowCounts();
-    // Pre-existing non-transactional behavior: the continuity row is created before
-    // the sessions INSERT fails. Recorded here, not changed by this Lock.
-    expect(after.continuity_states).toBe(before.continuity_states + 1);
-    expect(after.sessions).toBe(before.sessions);
-    expect(after.events).toBe(before.events);
-  });
+    expect(res.status).toBe(200);
+    expect(json.ok).toBe(true);
+    const data = json.data as Record<string, unknown>;
 
-  it.skip(
-    "full authorized success path — SKIPPED: lib/db/schema.sql defines no sessions.fracture_id column and no migration adds it, but lib/session/process.ts inserts it; Production schema is unknown",
-    () => {},
-  );
+    const after = await rowCounts();
+    expect(after).toEqual({
+      ...before,
+      sessions: before.sessions + 1,
+      continuity_states: before.continuity_states + 1,
+      derived_session_index: before.derived_session_index + 1,
+      events: before.events + 2,
+    });
+
+    const sessions = await db.execute({
+      sql: `SELECT id, operator_id, fracture_id, distortion_class, continuity_score_after FROM sessions`,
+      args: [],
+    });
+    expect(sessions.rows).toHaveLength(1);
+    const row = sessions.rows[0] as Record<string, unknown>;
+    expect(row.id).toBe(data.sessionId);
+    expect(row.operator_id).toBe(OPERATOR);
+    // /api/v2/execute passes no fracture_id; process.ts stores "" (input.fracture_id?.trim() ?? "").
+    expect(row.fracture_id).toBe("");
+    expect(row.distortion_class).toBe("narrative");
+
+    const continuity = await db.execute({
+      sql: `SELECT operator_id, continuity_score FROM continuity_states WHERE operator_id = ?`,
+      args: [OPERATOR],
+    });
+    expect(continuity.rows).toHaveLength(1);
+    expect(Number((continuity.rows[0] as Record<string, unknown>).continuity_score)).toBe(
+      data.continuity_after,
+    );
+
+    const dsi = await db.execute({
+      sql: `SELECT operator_id, session_id FROM derived_session_index`,
+      args: [],
+    });
+    expect(dsi.rows).toHaveLength(1);
+    expect((dsi.rows[0] as Record<string, unknown>).session_id).toBe(data.sessionId);
+
+    const events = await db.execute({
+      sql: `SELECT event_type, operator_id, session_id FROM events ORDER BY event_type`,
+      args: [],
+    });
+    expect(events.rows.map((r) => (r as Record<string, unknown>).event_type)).toEqual([
+      "continuity.calculated",
+      "session.created",
+    ]);
+    for (const e of events.rows) {
+      expect((e as Record<string, unknown>).operator_id).toBe(OPERATOR);
+      expect((e as Record<string, unknown>).session_id).toBe(data.sessionId);
+    }
+
+    expect(vi.mocked(revalidatePath)).toHaveBeenCalled();
+  });
 });
 
 describe("secret exposure", () => {

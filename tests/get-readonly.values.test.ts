@@ -1,5 +1,4 @@
-// GET read-only checks against schema.sql PLUS a test-only column that models the
-// presumed Production drift (sessions.fracture_id). lib/db/schema.sql is not changed.
+// GET read-only checks with seeded sessions, on a DB provisioned from lib/db/schema.sql.
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/lib/db/client";
 import { GET as stateGET } from "@/app/api/v1/state/route";
@@ -15,8 +14,8 @@ import {
   tableSnapshot,
 } from "./helpers";
 
-const UNKNOWN = "op_drift_unknown";
-const SEEDED = "op_drift_seeded";
+const UNKNOWN = "op_values_unknown";
+const SEEDED = "op_values_seeded";
 
 async function seedSessions(operatorId: string) {
   const rows: Array<[string, number, number]> = [
@@ -46,7 +45,6 @@ async function get(handler: (r: Request) => Promise<Response>, path: string, ope
 
 beforeAll(async () => {
   await provisionSchema();
-  await db.execute(`ALTER TABLE sessions ADD COLUMN fracture_id TEXT`);
   expect(await hasSessionsFractureIdColumn()).toBe(true);
 });
 
