@@ -1,5 +1,5 @@
-"use server";
-
+// Server-side data functions. Not a server-action module (Lock C1 removed "use server").
+import "server-only";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, initDbIfNeeded } from "@/lib/db/client";
@@ -11,7 +11,7 @@ import {
 } from "@/lib/kernel/domain";
 import { processSession } from "@/lib/session/process";
 import {
-  getOrCreateContinuityState,
+  readContinuityState,
   type ContinuityState,
 } from "@/lib/session/continuity";
 
@@ -176,7 +176,7 @@ export async function getDashboardState(
 
   await initDbIfNeeded();
 
-  const continuity = await getOrCreateContinuityState(operatorId);
+  const continuity = await readContinuityState(operatorId);
 
   const active = await db.execute({
     sql: `
@@ -292,32 +292,7 @@ export async function getVolatilityBand(
   const volatility_band: "low" | "medium" | "high" =
     score > 12 ? "high" : score >= 4 ? "medium" : "low";
 
-  await db.execute({
-    sql: `
-      INSERT INTO derived_volatility (
-        operator_id,
-        window_days,
-        clarity_variance,
-        continuity_variance,
-        volatility_band,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(operator_id, window_days) DO UPDATE SET
-        clarity_variance = excluded.clarity_variance,
-        continuity_variance = excluded.continuity_variance,
-        volatility_band = excluded.volatility_band,
-        updated_at = excluded.updated_at
-    `,
-    args: [
-      operatorId,
-      30,
-      clarityVariance,
-      continuityVariance,
-      volatility_band,
-      new Date().toISOString(),
-    ],
-  });
-
+  // Lock C1: GET paths no longer persist this band; a stored row is still read first.
   return volatility_band;
 }
 

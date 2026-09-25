@@ -28,7 +28,10 @@ export async function GET(req: Request) {
       volatilityBand: volatility,
     });
   } catch (err) {
-    return apiError(err instanceof Error ? err.message : "Unknown error");
+    console.error("[v2/analytics] read failed", {
+      name: err instanceof Error ? err.name : typeof err,
+    });
+    return apiError("internal_error", 500);
   }
 }
 

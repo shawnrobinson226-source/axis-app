@@ -34,7 +34,10 @@ export async function GET(req: Request) {
       },
     });
   } catch (err) {
-    return apiError(err instanceof Error ? err.message : "Unknown error");
+    console.error("[v2/operator-profile] read failed", {
+      name: err instanceof Error ? err.name : typeof err,
+    });
+    return apiError("internal_error", 500);
   }
 }
 
