@@ -3,7 +3,6 @@ export const runtime = "nodejs";
 
 import packageJson from "../../package.json";
 import OperatorIdentity from "./operator-identity";
-import ResetButton from "./reset-button";
 
 function Card({
   title,
@@ -72,21 +71,6 @@ export default function SettingsPage() {
               wayofthereaper@gmail.com
             </a>
           </div>
-        </div>
-      </Card>
-
-      <Card title="Clear Execution Record">
-        <div style={{ opacity: 0.9, lineHeight: 1.5 }}>
-          This deletes all pattern checks and execution records.
-        </div>
-
-        <div style={{ marginTop: 8, fontSize: 13, opacity: 0.7 }}>
-          Use this only when you intend to permanently clear your recorded evidence.
-          This action cannot be undone.
-        </div>
-
-        <div style={{ marginTop: 12 }}>
-          <ResetButton />
         </div>
       </Card>
 

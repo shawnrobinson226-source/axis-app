@@ -242,24 +242,6 @@ export async function getVolatilityBand(
 
   await initDbIfNeeded();
 
-  const existing = await db.execute({
-    sql: `
-      SELECT volatility_band
-      FROM derived_volatility
-      WHERE operator_id = ?
-        AND window_days = 30
-      LIMIT 1
-    `,
-    args: [operatorId],
-  });
-
-  const row = existing.rows?.[0] as Record<string, unknown> | undefined;
-  const band = readString(row ?? {}, "volatility_band", "");
-
-  if (band === "low" || band === "medium" || band === "high") {
-    return band;
-  }
-
   const values = await db.execute({
     sql: `
       SELECT clarity_rating, continuity_score_after
@@ -292,7 +274,7 @@ export async function getVolatilityBand(
   const volatility_band: "low" | "medium" | "high" =
     score > 12 ? "high" : score >= 4 ? "medium" : "low";
 
-  // Lock C1: GET paths no longer persist this band; a stored row is still read first.
+  // Lock C1: always computed from the last 30 days of sessions; never read from or written to derived_volatility.
   return volatility_band;
 }
 

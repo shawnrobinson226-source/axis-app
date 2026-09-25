@@ -12,6 +12,7 @@ import {
   resetRows,
   rowCounts,
   seedOperator,
+  tableSnapshot,
 } from "./helpers";
 
 const UNKNOWN = "op_drift_unknown";
@@ -58,6 +59,7 @@ beforeEach(async () => {
 describe("GET /api/v1/state", () => {
   it("unknown ID -> 200 defaults, zero row changes", async () => {
     const before = await rowCounts();
+    const snap = await tableSnapshot();
     const { res, json } = await get(stateGET, "/api/v1/state", UNKNOWN);
     expect(res.status).toBe(200);
     expect(json.data.continuity.operator_id).toBe(UNKNOWN);
@@ -66,10 +68,12 @@ describe("GET /api/v1/state", () => {
     expect(json.data.recentSessions).toEqual([]);
     expect(json.data.volatilityBand).toBe("low");
     expect(await rowCounts()).toEqual(before);
+    expect(await tableSnapshot()).toEqual(snap);
   });
 
   it("seeded ID -> 200 stored values, computed band, zero row changes", async () => {
     const before = await rowCounts();
+    const snap = await tableSnapshot();
     const { res, json } = await get(stateGET, "/api/v1/state", SEEDED);
     expect(res.status).toBe(200);
     expect(json.data.continuity.continuity_score).toBe(62.5);
@@ -77,46 +81,75 @@ describe("GET /api/v1/state", () => {
     expect(json.data.recentSessions).toHaveLength(3);
     expect(json.data.volatilityBand).toBe("high");
     expect(await rowCounts()).toEqual(before);
+    expect(await tableSnapshot()).toEqual(snap);
     expect(before.derived_volatility).toBe(0);
   });
 
-  it("seeded ID with a stored derived_volatility row -> stored band is still returned", async () => {
+  it("stored derived_volatility band conflicting with session data is ignored; no table contents change", async () => {
     await db.execute({
       sql: `INSERT INTO derived_volatility (operator_id, window_days, clarity_variance, continuity_variance, volatility_band, updated_at)
-            VALUES (?, 30, 0, 0, 'medium', '2026-01-01T00:00:00.000Z')`,
+            VALUES (?, 30, 0, 0, 'low', '2026-01-01T00:00:00.000Z')`,
       args: [SEEDED],
     });
-    const before = await rowCounts();
+    const before = await tableSnapshot();
     const { json } = await get(stateGET, "/api/v1/state", SEEDED);
-    expect(json.data.volatilityBand).toBe("medium");
-    expect(await rowCounts()).toEqual(before);
+    expect(json.data.volatilityBand).toBe("high");
+    expect(await tableSnapshot()).toEqual(before);
+  });
+
+  it("stored band for an operator with no sessions is ignored (computed low, stored high)", async () => {
+    await db.execute({
+      sql: `INSERT INTO derived_volatility (operator_id, window_days, clarity_variance, continuity_variance, volatility_band, updated_at)
+            VALUES (?, 30, 99, 99, 'high', '2026-01-01T00:00:00.000Z')`,
+      args: [UNKNOWN],
+    });
+    const before = await tableSnapshot();
+    const { json } = await get(stateGET, "/api/v1/state", UNKNOWN);
+    expect(json.data.volatilityBand).toBe("low");
+    expect(await tableSnapshot()).toEqual(before);
+  });
+
+  it("repeated calls over unchanged session data return the same band; no table contents change", async () => {
+    const before = await tableSnapshot();
+    const bands: string[] = [];
+    for (let i = 0; i < 3; i += 1) {
+      const { json } = await get(stateGET, "/api/v1/state", SEEDED);
+      bands.push(json.data.volatilityBand);
+    }
+    expect(bands).toEqual(["high", "high", "high"]);
+    expect(await tableSnapshot()).toEqual(before);
   });
 });
 
 describe("GET /api/v2/analytics", () => {
   it("unknown ID -> 200 defaults, zero row changes", async () => {
     const before = await rowCounts();
+    const snap = await tableSnapshot();
     const { res, json } = await get(analyticsGET, "/api/v2/analytics", UNKNOWN);
     expect(res.status).toBe(200);
     expect(json.data.continuity.continuity_score).toBe(50);
     expect(json.data.recentSessions).toEqual([]);
     expect(json.data.volatilityBand).toBe("low");
     expect(await rowCounts()).toEqual(before);
+    expect(await tableSnapshot()).toEqual(snap);
   });
 
   it("seeded ID -> 200 stored values (includes trigger text), zero row changes", async () => {
     const before = await rowCounts();
+    const snap = await tableSnapshot();
     const { res, json } = await get(analyticsGET, "/api/v2/analytics", SEEDED);
     expect(res.status).toBe(200);
     expect(json.data.continuity.continuity_score).toBe(62.5);
     expect(json.data.recentSessions[0].trigger).toBe("trigger 1");
     expect(await rowCounts()).toEqual(before);
+    expect(await tableSnapshot()).toEqual(snap);
   });
 });
 
 describe("GET /api/v2/operator-profile", () => {
   it("unknown ID -> 200 defaults, zero row changes", async () => {
     const before = await rowCounts();
+    const snap = await tableSnapshot();
     const { res, json } = await get(profileGET, "/api/v2/operator-profile", UNKNOWN);
     expect(res.status).toBe(200);
     expect(json.data.operator).toMatchObject({ operator_id: UNKNOWN, continuity_score: 50 });
@@ -126,10 +159,12 @@ describe("GET /api/v2/operator-profile", () => {
       volatility_band: "low",
     });
     expect(await rowCounts()).toEqual(before);
+    expect(await tableSnapshot()).toEqual(snap);
   });
 
   it("seeded ID -> 200 stored values, zero row changes", async () => {
     const before = await rowCounts();
+    const snap = await tableSnapshot();
     const { res, json } = await get(profileGET, "/api/v2/operator-profile", SEEDED);
     expect(res.status).toBe(200);
     expect(json.data.operator.continuity_score).toBe(62.5);
@@ -139,6 +174,7 @@ describe("GET /api/v2/operator-profile", () => {
       volatility_band: "high",
     });
     expect(await rowCounts()).toEqual(before);
+    expect(await tableSnapshot()).toEqual(snap);
   });
 });
 
@@ -150,9 +186,11 @@ describe("missing operator header on GETs (unchanged)", () => {
   ] as const) {
     it(`GET ${path} without x-operator-id -> 401, zero row changes`, async () => {
       const before = await rowCounts();
+      const snap = await tableSnapshot();
       const res = await handler(makeRequest(path));
       expect(res.status).toBe(401);
       expect(await rowCounts()).toEqual(before);
+      expect(await tableSnapshot()).toEqual(snap);
     });
   }
 });

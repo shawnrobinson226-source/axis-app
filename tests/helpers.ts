@@ -42,6 +42,16 @@ export async function rowCounts(): Promise<Record<string, number>> {
   return counts;
 }
 
+// Full contents of every row table, for asserting GETs change nothing at all.
+export async function tableSnapshot(): Promise<Record<string, unknown[]>> {
+  const snapshot: Record<string, unknown[]> = {};
+  for (const table of ROW_TABLES) {
+    const res = await db.execute(`SELECT * FROM ${table} ORDER BY rowid`);
+    snapshot[table] = res.rows.map((r) => ({ ...(r as Record<string, unknown>) }));
+  }
+  return snapshot;
+}
+
 export async function hasSessionsFractureIdColumn(): Promise<boolean> {
   const res = await db.execute(`PRAGMA table_info(sessions)`);
   return res.rows.some((r) => (r as Record<string, unknown>).name === "fracture_id");
