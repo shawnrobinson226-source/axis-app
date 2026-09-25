@@ -10,13 +10,24 @@ import {
   resetRows,
   rowCounts,
   seedOperator,
+  tableSnapshot,
 } from "./helpers";
+
+type Json = { ok: boolean; data: Record<string, unknown> };
 
 const routes = [
   ["/api/v1/state", stateGET],
   ["/api/v2/analytics", analyticsGET],
   ["/api/v2/operator-profile", profileGET],
 ] as const;
+
+// Continuity score each route reports for an unknown ID (defaults) or a seeded ID.
+function continuityScore(path: string, data: Record<string, unknown>): unknown {
+  if (path === "/api/v2/operator-profile") {
+    return (data.operator as Record<string, unknown>).continuity_score;
+  }
+  return (data.continuity as Record<string, unknown>).continuity_score;
+}
 
 beforeAll(async () => {
   await provisionSchema();
@@ -27,22 +38,24 @@ beforeEach(async () => {
 });
 
 describe("pure schema.sql database", () => {
-  it("has no sessions.fracture_id column", async () => {
-    expect(await hasSessionsFractureIdColumn()).toBe(false);
+  it("defines sessions.fracture_id", async () => {
+    expect(await hasSessionsFractureIdColumn()).toBe(true);
   });
 
   for (const [path, handler] of routes) {
     for (const kind of ["unknown", "seeded"] as const) {
-      it(`GET ${path} (${kind} ID) -> generic 500 from schema drift, zero row changes`, async () => {
+      it(`GET ${path} (${kind} ID) -> 200 with ${kind === "unknown" ? "defaults" : "stored values"}, zero row changes`, async () => {
         const operatorId = `op_schema_${kind}`;
         if (kind === "seeded") await seedOperator(operatorId);
         const before = await rowCounts();
+        const snap = await tableSnapshot();
         const res = await handler(makeRequest(path, { headers: { "x-operator-id": operatorId } }));
-        const text = await res.text();
-        expect(res.status).toBe(500);
-        expect(JSON.parse(text).error).toBe("internal_error");
-        expect(text).not.toMatch(/fracture_id|SQLITE|no such column/i);
+        expect(res.status).toBe(200);
+        const json = (await res.json()) as Json;
+        expect(json.ok).toBe(true);
+        expect(continuityScore(path, json.data)).toBe(kind === "unknown" ? 50 : 62.5);
         expect(await rowCounts()).toEqual(before);
+        expect(await tableSnapshot()).toEqual(snap);
       });
     }
   }

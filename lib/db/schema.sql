@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   distortion_class TEXT NOT NULL CHECK (
     distortion_class IN ('narrative','emotional','behavioral','perceptual','continuity')
   ),
+  fracture_id TEXT,
   origin TEXT NOT NULL,
   thought TEXT NOT NULL,
   emotion TEXT NOT NULL,
