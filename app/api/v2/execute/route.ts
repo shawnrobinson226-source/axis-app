@@ -1,7 +1,11 @@
 import { apiError, apiOk } from "@/lib/api/responses";
 import { rateLimit } from "@/lib/api/rateLimit";
+import { requireServiceAuth } from "@/lib/api/serviceAuth";
 import { validateRequest } from "@/lib/api/validateRequest";
+import { SESSION_OUTCOME, type SessionOutcome } from "@/lib/kernel/domain";
 import { processSession } from "@/lib/session/process";
+
+const GUARD_BLOCKED_MESSAGE = "Guard blocked session";
 
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for") ?? "local";
@@ -10,20 +14,43 @@ export async function POST(req: Request) {
     return apiError("Rate limit exceeded", 429);
   }
 
+  // Service auth runs before any body parsing, DB access, or continuity call.
+  const auth = requireServiceAuth(req);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
+  const operatorId = req.headers.get("x-operator-id")?.trim() ?? "";
+  if (!operatorId) {
+    return apiError("Missing operator identity", 400);
+  }
+
+  let body: unknown;
   try {
-    const body = await req.json();
-    const validation = validateRequest(req, body);
-    if (!validation.ok) {
-      return apiError(validation.error, 400);
-    }
+    body = await req.json();
+  } catch {
+    return apiError("Invalid JSON body", 400);
+  }
 
-    if (!validation.body.classification) {
-      return apiError("Classification is required", 400);
-    }
-    if (!validation.body.next_action) {
-      return apiError("Next action is required", 400);
-    }
+  const validation = validateRequest(req, body);
+  if (!validation.ok) {
+    return apiError(validation.error, 400);
+  }
 
+  if (!validation.body.classification) {
+    return apiError("Classification is required", 400);
+  }
+  if (!validation.body.next_action) {
+    return apiError("Next action is required", 400);
+  }
+  if (
+    validation.body.outcome !== undefined &&
+    !SESSION_OUTCOME.includes(validation.body.outcome as SessionOutcome)
+  ) {
+    return apiError("Invalid outcome", 400);
+  }
+
+  try {
     const result = await processSession({
       operator_id: validation.operatorId,
       trigger: validation.body.trigger,
@@ -37,7 +64,14 @@ export async function POST(req: Request) {
 
     return apiOk(result);
   } catch (err) {
-    return apiError(err instanceof Error ? err.message : "Unknown error", 400);
+    if (err instanceof Error && err.message === GUARD_BLOCKED_MESSAGE) {
+      return apiError("guard_blocked", 400);
+    }
+
+    console.error("[v2/execute] processSession failed", {
+      name: err instanceof Error ? err.name : typeof err,
+    });
+    return apiError("internal_error", 500);
   }
 }
 

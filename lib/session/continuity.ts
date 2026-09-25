@@ -41,6 +41,57 @@ function readString(
   return String(row[key] ?? fallback);
 }
 
+function defaultContinuityState(operatorId: string): ContinuityState {
+  return {
+    operator_id: operatorId,
+    perception_alignment: DEFAULT_CONTINUITY_SCORE,
+    identity_alignment: DEFAULT_CONTINUITY_SCORE,
+    intention_alignment: DEFAULT_CONTINUITY_SCORE,
+    action_alignment: DEFAULT_CONTINUITY_SCORE,
+    continuity_score: DEFAULT_CONTINUITY_SCORE,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+// Pure read for GET paths: unknown operators get response defaults, no row is created.
+export async function readContinuityState(
+  operatorId: string,
+): Promise<ContinuityState> {
+  await initDbIfNeeded();
+
+  const existing = await db.execute({
+    sql: `
+      SELECT
+        operator_id,
+        perception_alignment,
+        identity_alignment,
+        intention_alignment,
+        action_alignment,
+        continuity_score,
+        updated_at
+      FROM continuity_states
+      WHERE operator_id = ?
+      LIMIT 1
+    `,
+    args: [operatorId],
+  });
+
+  const first = existing.rows?.[0] as Record<string, unknown> | undefined;
+  if (!first) {
+    return defaultContinuityState(operatorId);
+  }
+
+  return {
+    operator_id: readString(first, "operator_id"),
+    perception_alignment: readNumber(first, "perception_alignment", DEFAULT_CONTINUITY_SCORE),
+    identity_alignment: readNumber(first, "identity_alignment", DEFAULT_CONTINUITY_SCORE),
+    intention_alignment: readNumber(first, "intention_alignment", DEFAULT_CONTINUITY_SCORE),
+    action_alignment: readNumber(first, "action_alignment", DEFAULT_CONTINUITY_SCORE),
+    continuity_score: readNumber(first, "continuity_score", DEFAULT_CONTINUITY_SCORE),
+    updated_at: readString(first, "updated_at"),
+  };
+}
+
 export async function getOrCreateContinuityState(
   operatorId: string,
 ): Promise<ContinuityState> {

@@ -116,40 +116,6 @@ export default function LogsClient({
     });
   }
 
-  function resetAll() {
-    const confirmed = window.confirm(
-      "Delete all execution records? This cannot be undone.",
-    );
-
-    if (!confirmed) return;
-
-    setMsg(null);
-    startTransition(async () => {
-      try {
-        if (!operatorId) {
-          throw new Error("Operator identity is required.");
-        }
-
-        const response = await fetch("/api/v1/reset", {
-          method: "POST",
-          headers: {
-            "x-operator-id": operatorId,
-          },
-        });
-
-        const body = (await response.json()) as { ok?: boolean; error?: string };
-        if (!response.ok || !body.ok) {
-          throw new Error(body.error ?? "Reset failed.");
-        }
-
-        await load(limit);
-        setMsg("Execution record cleared.");
-      } catch (e) {
-        setMsg(e instanceof Error ? e.message : "Reset failed.");
-      }
-    });
-  }
-
   return (
     <main style={{ padding: 24, maxWidth: 1280 }}>
       <h1 style={{ marginBottom: 8 }}>Execution Record</h1>
@@ -209,15 +175,6 @@ export default function LogsClient({
           disabled={isPending}
         >
           Refresh
-        </button>
-
-        <button
-          type="button"
-          onClick={resetAll}
-          style={buttonStyle(false)}
-          disabled={isPending}
-        >
-          Clear Execution Record
         </button>
       </div>
 
